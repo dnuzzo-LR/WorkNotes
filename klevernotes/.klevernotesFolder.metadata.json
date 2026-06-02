@@ -2,6 +2,9 @@
     "content": [
         {
             "name": "#4136 Add new debug_lvlPair()"
+        },
+        {
+            "name": "telmar_telnet_troubleshooting"
         }
     ]
 }
