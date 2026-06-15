@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Issues/4409 - Convert CLI process to use EPOLL.md",
+                "file": "Issues/4381 - Batch large number of NE Logins.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "4409 - Convert CLI process to use EPOLL"
+              "title": "4381 - Batch large number of NE Logins"
             }
           }
         ]
@@ -157,6 +157,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "obsidian-git:Open Git source control": false,
       "obsidian42-brat:BRAT": false,
       "bases:Create new base": false,
       "switcher:Open quick switcher": false,
@@ -170,6 +171,8 @@
   "active": "058875ad3ab5aa27",
   "lastOpenFiles": [
     "Issues/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+    "Issues/4381 - Batch large number of NE Logins.md",
+    "Issues/4381 - Batch large number of NE Logins.md.tmp.278695.9221948e9169",
     "Issues/4409 - Convert CLI process to use EPOLL.md",
     "Issues/4409 - Convert CLI process to use EPOLL.md.tmp.189613.b00edf94c2ce",
     "8M+ DiGroups/8M digoups.md",
