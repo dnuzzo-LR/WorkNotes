@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md",
+                "file": "TODO.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck"
+              "title": "TODO"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 402.5
+    "width": 848.5
   },
   "right": {
     "id": "60ccb50657fc617a",
@@ -147,13 +147,23 @@
               "icon": "lucide-list",
               "title": "Outline"
             }
+          },
+          {
+            "id": "882844603ac46b4f",
+            "type": "leaf",
+            "state": {
+              "type": "claudian-view",
+              "state": {},
+              "icon": "bot",
+              "title": "Claudian"
+            }
           }
-        ]
+        ],
+        "currentTab": 4
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 340.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -165,38 +175,49 @@
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
-      "command-palette:Open command palette": false
+      "command-palette:Open command palette": false,
+      "realclaudian:Open Claudian": false
     }
   },
-  "active": "058875ad3ab5aa27",
+  "active": "882844603ac46b4f",
   "lastOpenFiles": [
+    "Archive/3139 - Praetorian Security Audit Findings.md",
+    "Issues/3139 - Praetorian Security Audit Findings.md.tmp.349727.c314610266c0",
+    "Issues/2375 - Modernize FEP-BEP Multi-box communications Documentation.md",
+    "Issues/2375 - Modernize FEP-BEP Multi-box communications Documentation.md.tmp.349727.7674ff538a78",
+    "Issues/2373 - Modernize FEP-BEP Multi-box communications QA Testing.md",
+    "Issues/2373 - Modernize FEP-BEP Multi-box communications QA Testing.md.tmp.349727.23c54ef145d4",
+    "Archive/1897 - Configure GR on ATT UVN RH8 64-bit Cloud VMs.md",
+    "Issues/1897 - Configure GR on ATT UVN RH8 64-bit Cloud VMs.md.tmp.349727.10013bacedb2",
+    "Archive/1892 - ATT UVN RH8 64-bit Cloud Support.md",
+    "Issues/1892 - ATT UVN RH8 64-bit Cloud Support.md.tmp.349727.72defb6e6741",
+    "Archive/1891 - Configure GR on ATT EPM-CNM RH8 32-bit Cloud VMs.md",
+    "Issues/1891 - Configure GR on ATT EPM-CNM RH8 32-bit Cloud VMs.md.tmp.349727.80df1e0884fd",
+    "Archive/353 - ATT EPM-CNM RH8 32-bit Cloud Support.md",
+    "Issues/353 - ATT EPM-CNM RH8 32-bit Cloud Support.md.tmp.349727.b542d294f63a",
+    "Archive/168 - netFLEX Penetration Test Jan 20-30 Items.md",
+    "Issues/168 - netFLEX Penetration Test Jan 20-30 Items.md.tmp.349727.934ec946939a",
+    "TODO.md.tmp.346734.7e68cbd29750",
+    "README.md",
+    "TODO.md",
+    "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md",
+    "DevOps/Less Command Keys.md",
+    "DevOps",
+    "Archive/8M digoups.md",
+    "8M digoups.md",
+    "Archive/Penetration Testing.md",
+    "Archive/telmar_telnet_troubleshooting.md",
+    "Issues/4143 TELLABS 530.md",
+    "4143 TELLABS 530.md",
     "Issues/4136 Add new debug_lvlPair().md",
     "4136 Add new debug_lvlPair().md",
     "Issues/3684 [DEV][Charter: Infinera ADP Not Bu.md",
     "#3684 [DEV][Charter: Infinera ADP Not Bu.md",
     "3684 [DEV][Charter: Infinera ADP Not Bu.md",
-    "Issues/4039 - Lumen ADTRAN TA3000 RT Login Failure.md.tmp.345107.b3fc2ec1735a",
-    "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md",
     "#4143 TELLABS 530.md",
-    "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md.tmp.281083.27f38ba9d724",
     "Issues/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
     "4093 Lumen Local ADTRAN TOTAL ACCESS 30.md",
-    "Issues/4381 - Batch large number of NE Logins.md",
-    "#4136 Add new debug_lvlPair().md",
-    "Issues/4381 - Batch large number of NE Logins.md.tmp.278695.9221948e9169",
-    "Issues/4409 - Convert CLI process to use EPOLL.md",
-    "Issues/4409 - Convert CLI process to use EPOLL.md.tmp.189613.b00edf94c2ce",
-    "8M+ DiGroups/8M digoups.md",
-    "Issues/4039 - Lumen ADTRAN TA3000 RT Login Failure.md.tmp.186260.8e2b693b54fa",
-    "DDM2 Card/New DD2M4 Card.md",
-    "Penetration Testing.md",
-    "2025-02-19.md",
-    "Less Command Keys.md",
-    "Less Command Keys",
     "Untitled.canvas",
-    "2025-02-12.md",
-    "DDM2 Card/Pasted image 20250212095954.png",
-    "8M+ DiGroups",
-    "DDM2 Card"
+    "DDM2 Card/Pasted image 20250212095954.png"
   ]
 }

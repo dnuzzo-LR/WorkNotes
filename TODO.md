@@ -1,0 +1,52 @@
+# Things I should be Working On
+
+## Open netFLEX Issues Assigned to Me
+
+_Updated 2026-06-17_
+
+### Parent features assigned to me
+
+- [ ] [#4409](https://github.com/lightriversoftware/netflex/issues/4409) — [65][FEATURE] Convert CLI process to use EPOLL
+  - [ ] [#4664](https://github.com/lightriversoftware/netflex/issues/4664) — [DEV] Design
+  - [ ] [#4665](https://github.com/lightriversoftware/netflex/issues/4665) — [DEV] Implement
+  - [ ] [#4412](https://github.com/lightriversoftware/netflex/issues/4412) — [DEV] Investigation
+  - [ ] [#4939](https://github.com/lightriversoftware/netflex/issues/4939) — [DEV] Add Base code for new server ncland
+  - [ ] [#4940](https://github.com/lightriversoftware/netflex/issues/4940) — [DEV] YAML support for adding new NE support
+  - [ ] [#4941](https://github.com/lightriversoftware/netflex/issues/4941) — [DEV] Lua extention, for Login handshake support, and command post processing
+  - [ ] [#4942](https://github.com/lightriversoftware/netflex/issues/4942) — [DEV] Wire up message reading into the epoll loop and forwarding to screen
+  - [ ] [#4943](https://github.com/lightriversoftware/netflex/issues/4943) — [DEV] Update clan_fe to forward cli commands to ncland based on JSON file
+  - [ ] [#4944](https://github.com/lightriversoftware/netflex/issues/4944) — [DEV] Add Event to Daemon, so Link UP/DOWN events be subscribed to
+  - [ ] [#4945](https://github.com/lightriversoftware/netflex/issues/4945) — [DEV] wire up rdb to send enable/disable events to event daemon
+
+- [ ] [#353](https://github.com/lightriversoftware/netflex/issues/353) — [PROJECT] ATT - EPM/CNM RH8 32-bit Cloud Support
+  - [ ] [#4051](https://github.com/lightriversoftware/netflex/issues/4051) — [DOC] Geographic Redundancy on AT&T EPM/CNM
+  - [ ] [#1891](https://github.com/lightriversoftware/netflex/issues/1891) — [DEV] Configure and test Geographic Redundancy on AT&T EPM/CNM RH8 32-bit Cloud VMs
+
+- [ ] [#360](https://github.com/lightriversoftware/netflex/issues/360) — [55][FEATURE] Modernize FEP/BEP Multi-box communications
+  - [ ] [#2375](https://github.com/lightriversoftware/netflex/issues/2375) — [DOC] Documentation
+  - [ ] [#2373](https://github.com/lightriversoftware/netflex/issues/2373) — [QA] Feature QA Testing
+
+### Sub-tasks under parents not assigned to me
+
+- _[#3053](https://github.com/lightriversoftware/netflex/issues/3053) — [FEATURE] 1830 PSS/PSI-L new equipment at ODC: MLFSB, EILA, EILAL_
+  - [ ] [#4605](https://github.com/lightriversoftware/netflex/issues/4605) — [DEV] Equipment Management - EILA/EILAL
+- _[#4583](https://github.com/lightriversoftware/netflex/issues/4583) — [FEATURE] 1830 PSS Support RA5PB as separate card from RA5P_
+  - [ ] [#4590](https://github.com/lightriversoftware/netflex/issues/4590) — [DEV] Equipment Management
+- _[#3614](https://github.com/lightriversoftware/netflex/issues/3614) — [SUPPORT] Charter: Infinera ADP Not Building RT_
+  - [ ] [#4381](https://github.com/lightriversoftware/netflex/issues/4381) — [DEV] Batch large number of NE Login's
+- _[#3139](https://github.com/lightriversoftware/netflex/issues/3139) — [PROJECT] Praetorian Security Audit Findings_
+  - [ ] [#3144](https://github.com/lightriversoftware/netflex/issues/3144) — [DEV] Insufficient Password Policies
+- _[#1892](https://github.com/lightriversoftware/netflex/issues/1892) — [PROJECT] ATT - UVN RH8 64-bit Cloud Support_
+  - [ ] [#1897](https://github.com/lightriversoftware/netflex/issues/1897) — [DEV] Configure and test Geographic Redundancy on AT&T UVN RH8 64-bit Cloud VMs
+
+### Standalone issues
+
+- [ ] [#3862](https://github.com/lightriversoftware/netflex/issues/3862) — [SUPPORT] Lumen Local TELLABS 532/530 NE type number 5 in nF is sending the incorrect login commands to the NE
+  - [ ] [#4143](https://github.com/lightriversoftware/netflex/issues/4143) — [DEV] Enhance lansim to support the login process on Tellabs 532/530 PDS NEs _(title references #3862)_
+- [ ] [#4835](https://github.com/lightriversoftware/netflex/issues/4835) — [SUPPORT] Ciena Core Director link flaps DOWN — RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck (lanalive.c)
+- [ ] [#4295](https://github.com/lightriversoftware/netflex/issues/4295) — [SUPPORT] NJ holvm66 - "Start" core dumping
+- [ ] [#4039](https://github.com/lightriversoftware/netflex/issues/4039) — [SUPPORT] Lumen Local ADTRAN TOTAL ACCESS 3000 RT Login Failure – Debug Logs with RT/GNE Watch + GNE Trace (Manual Login Works)
+- [ ] [#3974](https://github.com/lightriversoftware/netflex/issues/3974) — [DEV] add more netypes to clan libssh support
+- [ ] [#3840](https://github.com/lightriversoftware/netflex/issues/3840) — [SUPPORT] Charter - Circuit Does not Trace Through
+- [ ] [#3758](https://github.com/lightriversoftware/netflex/issues/3758) — [DEV] retrofit will print to a log, but not to stdout, so it's missing from the upgrade logs
+- [ ] [#168](https://github.com/lightriversoftware/netflex/issues/168) — [PROJECT] netFLEX Penetration Test Jan 20-30 Items
