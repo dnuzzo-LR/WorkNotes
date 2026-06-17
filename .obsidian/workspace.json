@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 800.5
+    "width": 264.5
   },
   "right": {
     "id": "60ccb50657fc617a",
@@ -163,7 +163,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 589.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -181,6 +181,11 @@
   },
   "active": "058875ad3ab5aa27",
   "lastOpenFiles": [
+    "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+    "TODO.md",
+    "Issues/4136 Add new debug_lvlPair().md",
+    "Issues/4143 TELLABS 530.md",
+    "Issues/3614 - Charter Infinera ADP Not Building RT.md",
     "Archive/4590 - [1830 PSS Support RA5PB as separate card from RA5P]Equipment Management [#4583].md",
     "Issues/In Progress/3144 - Praetorian Audit Insufficient Password Policies.md",
     "Issues/In Progress/3144 - Praetorian Audit Insufficient Password Policies.md.tmp.370740.bb4f09f87cef",
@@ -212,11 +217,6 @@
     "Issues/Done/4664 - Convert CLI to EPOLL Design.md",
     "Issues/In Progress/4605 - 1830 PSS-PSI-L EILA-EILAL Equipment Management.md",
     "Issues/Ready/4590 - 1830 PSS RA5PB Equipment Management.md",
-    "Issues/Done/4412 - Convert CLI to EPOLL Investigation.md",
-    "Issues/Ready/4409 - Convert CLI process to use EPOLL.md",
-    "Issues/Ready for QA/4381 - Charter Batch large number of NE Logins.md",
-    "Issues/Done/4295 - NJ holmvm66 Start core dumping.md",
-    "Issues/Ready for QA/4143 - Enhance lansim for Tellabs 532-530 PDS login.md",
     "Untitled.canvas",
     "DDM2 Card/Pasted image 20250212095954.png"
   ]
