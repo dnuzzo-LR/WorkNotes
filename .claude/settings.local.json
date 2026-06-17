@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Skill(sync-issue)"
+      "Skill(sync-issue)",
+      "Read(//home/dan/.claude/**)",
+      "Bash(gh api *)",
+      "Bash(gh issue *)",
+      "Bash(.claude/skills/sync-todo)",
+      "Write(TODO.md)"
     ]
   }
 }

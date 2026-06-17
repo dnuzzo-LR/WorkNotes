@@ -4,8 +4,8 @@
   "title": "Sync unsynced TODO issues",
   "titleGenerationStatus": "success",
   "createdAt": 1781699449321,
-  "updatedAt": 1781699981687,
-  "lastResponseAt": 1781699981687,
+  "updatedAt": 1781702317735,
+  "lastResponseAt": 1781702317735,
   "sessionId": "357b5716-46ab-4452-bd42-823f2cc731f8",
   "providerState": {
     "providerSessionId": "357b5716-46ab-4452-bd42-823f2cc731f8"
@@ -13,12 +13,12 @@
   "currentNote": "TODO.md",
   "usage": {
     "model": "haiku",
-    "inputTokens": 7,
-    "cacheCreationInputTokens": 315,
-    "cacheReadInputTokens": 33962,
+    "inputTokens": 6,
+    "cacheCreationInputTokens": 2116,
+    "cacheReadInputTokens": 116018,
     "contextWindow": 200000,
-    "contextTokens": 34284,
-    "percentage": 17,
+    "contextTokens": 118140,
+    "percentage": 59,
     "contextWindowIsAuthoritative": true
   }
 }
