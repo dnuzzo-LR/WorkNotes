@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Issues/4381 - Batch large number of NE Logins.md",
+                "file": "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "4381 - Batch large number of NE Logins"
+              "title": "4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 402.5
   },
   "right": {
     "id": "60ccb50657fc617a",
@@ -170,8 +170,19 @@
   },
   "active": "058875ad3ab5aa27",
   "lastOpenFiles": [
+    "Issues/4136 Add new debug_lvlPair().md",
+    "4136 Add new debug_lvlPair().md",
+    "Issues/3684 [DEV][Charter: Infinera ADP Not Bu.md",
+    "#3684 [DEV][Charter: Infinera ADP Not Bu.md",
+    "3684 [DEV][Charter: Infinera ADP Not Bu.md",
+    "Issues/4039 - Lumen ADTRAN TA3000 RT Login Failure.md.tmp.345107.b3fc2ec1735a",
+    "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md",
+    "#4143 TELLABS 530.md",
+    "Issues/4835 - Ciena Core Director link flaps DOWN - RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck.md.tmp.281083.27f38ba9d724",
     "Issues/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+    "4093 Lumen Local ADTRAN TOTAL ACCESS 30.md",
     "Issues/4381 - Batch large number of NE Logins.md",
+    "#4136 Add new debug_lvlPair().md",
     "Issues/4381 - Batch large number of NE Logins.md.tmp.278695.9221948e9169",
     "Issues/4409 - Convert CLI process to use EPOLL.md",
     "Issues/4409 - Convert CLI process to use EPOLL.md.tmp.189613.b00edf94c2ce",

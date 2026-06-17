@@ -44,6 +44,10 @@ Manual TL1 session (works) captured in the issue showed `ACT-USER` / `CANC-USER`
 
 > **Fix (hborreli-LR, 2026-06-01):** Set the variable **`RTLOGINDELAY`** in the ping file for the dtype. Set it to **3**.
 
+Believed to be the same root cause as the DTN RT logging in too quickly — plan is to have Henry try friendlies with that fix.
+
+Affected elements: **GNE 8850**, **RT 24316**.
+
 ## Attachments
 
 - `lan8850.txt` — LAN file snapshot
