@@ -1,0 +1,43 @@
+---
+issue: 4664
+repo: lightriversoftware/netflex
+state: OPEN
+status: Done
+title: Convert CLI process to use EPOLL — Design
+customer: LightRiver Internal
+priority: Important
+type: Development (enhancement)
+process_group: DNO
+release: 5.4.1
+milestone: 5.4.1
+author: dnuzzo-LR
+assignee: dnuzzo-LR
+created: 2026-06-08
+updated: 2026-06-08
+url: https://github.com/lightriversoftware/netflex/issues/4664
+---
+
+# Issue 4664 — [DEV][Convert CLI process to use EPOLL] Design [#4409]
+
+[View on GitHub](https://github.com/lightriversoftware/netflex/issues/4664)
+
+## Summary
+
+Design sub-task of parent #4409 (Convert CLI process to use EPOLL). Covers the design phase for the epoll conversion of the CLI process. Process group DNO, targeted at release 5.4.1. No further detail in the issue body.
+
+## Resolution / Notes
+
+No resolution posted yet.
+
+## Attachments
+
+None.
+
+## Metadata
+
+- **Issue Type:** Development (enhancement)
+- **Parent Issue:** #4409 (Convert CLI process to use EPOLL)
+- **Process Group:** DNO
+- **Software Release Detected:** 5.4.1
+- **Priority:** Important
+- **Project Status:** Done (no sprint assigned)
