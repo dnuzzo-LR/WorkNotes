@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clan-rewrite — YAML-driven NE Configuration</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --fg:#e2e8f0; --muted:#94a3b8;
+    --accent:#38bdf8; --accent2:#34d399; --warn:#fbbf24; --rule:#334155;
+    --code-bg:#0b1220; --code-fg:#cbd5e1;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  #deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;
+    padding:4.5vh 6vw 7vh;animation:fade .25s ease;overflow:auto}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1{font-size:3.4rem;line-height:1.05;margin:.2em 0;font-weight:800;letter-spacing:-.02em}
+  h2{font-size:2.1rem;margin:0 0 .5em;font-weight:700;color:#fff;
+    border-bottom:2px solid var(--rule);padding-bottom:.3em}
+  h2 .num{color:var(--accent);font-weight:800;margin-right:.4em}
+  h3{color:var(--accent2);font-size:1.15rem;margin:1em 0 .3em;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  ul{margin:.3em 0 .6em;padding-left:1.3em}
+  li{margin:.42em 0;font-size:1.45rem;line-height:1.35}
+  li small{display:block;color:var(--muted);font-size:1rem;margin-top:.1em}
+  p{font-size:1.45rem;line-height:1.4}
+  .lead{font-size:1.7rem;color:var(--fg);max-width:48ch}
+  .muted{color:var(--muted)}
+  .accent{color:var(--accent)} .accent2{color:var(--accent2)} .warn{color:var(--warn)}
+  code{font-family:"SF Mono",SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace;
+    background:#0b1220;color:#7dd3fc;padding:.08em .35em;border-radius:4px;font-size:.92em}
+  pre{background:var(--code-bg);color:var(--code-fg);border:1px solid var(--rule);
+    border-radius:10px;padding:1em 1.2em;overflow:auto;font-size:1.02rem;line-height:1.35;
+    font-family:"SF Mono",SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace}
+  pre.tight{font-size:.9rem;line-height:1.25}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1.5em}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2em}
+  table{border-collapse:collapse;width:100%;font-size:1.15rem}
+  th,td{border:1px solid var(--rule);padding:.5em .7em;text-align:left;vertical-align:top}
+  th{background:var(--bg2);color:#fff}
+  td code{font-size:.95em}
+  .card{background:var(--bg2);border:1px solid var(--rule);border-radius:12px;padding:1em 1.2em}
+  .card h3{margin-top:0}
+  .pill{display:inline-block;background:#0b1220;border:1px solid var(--accent);color:var(--accent);
+    border-radius:999px;padding:.15em .8em;font-size:1rem;margin:.2em .3em .2em 0}
+  .pill.ok{border-color:var(--accent2);color:var(--accent2)}
+  .pill.warn{border-color:var(--warn);color:var(--warn)}
+  .kicker{color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:1.05rem}
+  .center{justify-content:center}
+  .meta{color:var(--muted);font-size:1.2rem;margin-top:1.5em;line-height:1.7}
+  footer{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:center;padding:.6em 1.4em;font-size:.95rem;color:var(--muted);
+    background:linear-gradient(transparent,rgba(15,23,42,.9));pointer-events:none}
+  .bar{position:fixed;top:0;left:0;height:4px;background:var(--accent);transition:width .2s}
+  .nav{pointer-events:auto;cursor:pointer;color:var(--muted);user-select:none;padding:0 .5em}
+  .nav:hover{color:var(--fg)}
+  .flow{font-size:1.05rem}
+  .big{font-size:2.6rem;font-weight:800;color:#fff}
+  .grid-status{display:grid;grid-template-columns:auto 1fr;gap:.4em 1.2em;font-size:1.3rem;align-items:center}
+  .dot{width:.7em;height:.7em;border-radius:50%;display:inline-block;margin-right:.3em}
+  .d-ok{background:var(--accent2)} .d-wait{background:var(--warn)}
+  @media print{
+    .slide{display:flex!important;position:relative;height:auto;min-height:96vh;page-break-after:always;border-bottom:1px solid #ccc}
+    #deck{height:auto;overflow:visible} footer,.bar{display:none}
+    html,body{background:#fff;color:#111} h2{color:#111} pre{background:#f4f4f4;color:#111}
+  }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<div id="deck">
+
+  <!-- 1 TITLE -->
+  <section class="slide active center">
+    <div class="kicker">netFLEX · Network Element Management</div>
+    <h1><span class="accent">clan-rewrite</span><br>YAML-driven NE Configuration</h1>
+    <p class="lead muted">Replacing 10K lines of hardcoded per-NE C with declarative YAML + Lua —
+       add a network-element type by dropping in a file, no recompile.</p>
+    <div class="meta">
+      Dan Nuzzo &nbsp;·&nbsp; dnuzzo@lightriver.com<br>
+      Design approved 2026-05-27 · revised 2026-06-04<br>
+      Working name: <code>ncland</code> (New CLAN Daemon)
+    </div>
+  </section>
+
+  <!-- 2 PROBLEM -->
+  <section class="slide">
+    <h2><span class="num">1</span>The Problem</h2>
+    <p class="lead"><code>cnc/sdi/src/clan.c</code> — ~10,000 lines — is the CLI gateway between
+       netFLEX clients and network elements.</p>
+    <p>Every per-NE behavior is <span class="warn">hardcoded in C</span>:</p>
+    <ul>
+      <li>Prompt regexes, login sequences, keepalive commands</li>
+      <li>Paging handling, post-command processing, disconnect cleanup</li>
+      <li>Spread across <code>#define</code>s, switch ladders, and per-vendor <code>setup&lt;Vendor&gt;Connection()</code> functions</li>
+    </ul>
+    <p class="big warn">Adding a new NE type = editing C + recompiling + redeploying.</p>
+  </section>
+
+  <!-- 3 GOALS -->
+  <section class="slide">
+    <h2><span class="num">1</span>Goals</h2>
+    <ul>
+      <li><span class="accent2">Drop-in NE types</span> — a <code>.yaml</code> (+ optional <code>.lua</code>) in a config dir. No C recompile.</li>
+      <li><span class="accent2">Declarative data in YAML</span> — all the static per-NE config.</li>
+      <li><span class="accent2">Imperative logic in Lua</span> — complex, conditional per-NE behavior (login).</li>
+      <li><span class="accent2">Coexists with clan.c</span> — dispatches per NE type; cutover is per-NE and reversible.</li>
+      <li><span class="accent2">Provable parity</span> — behavior verified against legacy before any NE migrates.</li>
+      <li><span class="accent2">Shared patterns with <code>ncland</code></span> — same transport, eventing, process model.</li>
+    </ul>
+  </section>
+
+  <!-- 4 TECH STACK -->
+  <section class="slide">
+    <h2><span class="num">2</span>Tech Stack</h2>
+    <div class="two">
+      <table>
+        <tr><th>Component</th><th>Role</th></tr>
+        <tr><td>C++17 (<code>g++</code>)</td><td>Implementation</td></tr>
+        <tr><td>libzmq</td><td>Caller-boundary ROUTER + event SUB</td></tr>
+        <tr><td>nfdb bus (on <code>niimxd</code>)</td><td>NE-lifecycle eventing</td></tr>
+        <tr><td>libyaml / yaml-cpp</td><td>YAML parsing</td></tr>
+        <tr><td>Lua 5.4 / LuaJIT</td><td>Companion scripts</td></tr>
+        <tr><td>libssh</td><td>SSH transport to NEs</td></tr>
+        <tr><td>epoll · signalfd</td><td>Event loop · signals</td></tr>
+      </table>
+      <div class="card">
+        <h3>Compiler targets</h3>
+        <p><code>g++ 8.5</code> (RHEL 8) &amp; <code>g++ 11.x</code> (RHEL 9).</p>
+        <p class="muted">Intentionally diverges from the project's gcc 4.8.5 / RHEL 7 baseline — RHEL 7
+           systems stay on legacy <code>clan.c</code>. Matches ncland's choice.</p>
+        <span class="pill">C++17</span><span class="pill">ZeroMQ</span><span class="pill">Lua</span><span class="pill">epoll</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 BACKGROUND -->
+  <section class="slide">
+    <h2><span class="num">3</span>What Varies Per NE (the motivation)</h2>
+    <p class="muted">Catalogued from <code>clan.c</code> — ~25 NE-type families, each with its own <code>dtype</code>:</p>
+    <ul>
+      <li><b>Prompt detection</b> — a primary/secondary regex pair per NE</li>
+      <li><b>Login</b> — ~15 families just need a newline after connect; others have multi-step vendor dialogues</li>
+      <li><b>Keepalives</b> — per-NE command + interval (<code>whoami\n</code>/600s, <code>\n</code>/43s, <code>exec ping %h\n</code>/600s)</li>
+      <li><b>Paging</b> — three more-prompt families (Cisco/Juniper, Ciena/Fuji, default)</li>
+      <li><b>Disconnect</b> — some need clean save (TSS5 write-memory, WaveServer config save)</li>
+      <li><b>Transport</b> — telnet/ssh mix, varying banner &amp; command timeouts</li>
+    </ul>
+    <p class="lead">There is no central per-NE table today. <span class="accent">This rewrite extracts one.</span></p>
+  </section>
+
+  <!-- 6 ARCHITECTURE: process model -->
+  <section class="slide">
+    <h2><span class="num">4</span>Architecture — Warehouse / Worker</h2>
+    <div class="two">
+      <div class="card">
+        <h3>Warehouse (1 per daemon)</h3>
+        <ul>
+          <li>Owns the ZMQ ROUTER socket</li>
+          <li>Owns the YAML registry</li>
+          <li>Owns the nfdb event SUB socket</li>
+          <li>Single-threaded <code>epoll</code> loop</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Workers (N, e.g. <code>-w 4</code>)</h3>
+        <ul>
+          <li>Each owns a partition of NE-side I/O</li>
+          <li>Talk libssh / telnet to NEs</li>
+          <li>Run the YAML stepper + Lua VM</li>
+        </ul>
+      </div>
+    </div>
+    <h3>Boundary discipline</h3>
+    <p><span class="accent">ZeroMQ touches only the external caller boundary.</span> Warehouse↔worker IPC is a
+       Unix-domain <code>ctl_sock</code> carrying tagged frames (<code>'F'</code> fd-handoff via SCM_RIGHTS,
+       <code>'C'</code> cmd, <code>'R'</code> rsp, <code>'X'</code> shutdown).</p>
+  </section>
+
+  <!-- 7 DIAGRAM -->
+  <section class="slide">
+    <h2><span class="num">4.3</span>Data Flow</h2>
+    <pre class="tight">clients (DEALER) ─────► ZMQ ROUTER ◄───── warehouse
+                            │  ipc:///var/run/clan2/ctl.sock
+                            ▼
+                  ┌─────────────────────┐
+                  │  warehouse          │   YAML registry · stepper
+                  │   epoll loop        │   Lua VM · nfdb SUB fd
+                  │   ZMQ_FD · signalfd │
+                  └──────┬───────┬──────┘
+              ctl_sock   │       │   ctl_sock  (framed + SCM_RIGHTS)
+                         ▼       ▼
+                     ┌──────┐ ┌──────┐
+                     │workr │ │workr │  ... (N workers)
+                     │libssh│ │telnet│   YAML stepper · Lua VM
+                     └──┬───┘ └──┬───┘
+                        ▼        ▼
+                       NE        NE</pre>
+  </section>
+
+  <!-- 8 FOUR PLANES -->
+  <section class="slide">
+    <h2><span class="num">4.6</span>Four Planes</h2>
+    <div class="two">
+      <div class="card"><h3>1 · Registry</h3>
+        <p>Startup map: <code>ne_type → (parsed YAML, compiled regexes, Lua module)</code>.</p></div>
+      <div class="card"><h3>2 · Stepper</h3>
+        <p>Runs the YAML step language for <code>post_command</code> / <code>disconnect_steps</code>. Per-session state, inside workers.</p></div>
+      <div class="card"><h3>3 · Lua bridge</h3>
+        <p>Exposes <code>session</code> + <code>global</code> tables to scripts. Drives login.</p></div>
+      <div class="card"><h3>4 · Transport + eventing</h3>
+        <p>ROUTER for clients · nfdb SUB for NE lifecycle · <code>ctl_sock</code> to workers.</p></div>
+    </div>
+  </section>
+
+  <!-- 9 FILE LAYOUT -->
+  <section class="slide">
+    <h2><span class="num">6</span>File Layout</h2>
+    <pre class="tight">cnc/ncland/src/
+├── ne/                          # one YAML per NE type (+ abstract bases)
+│   ├── _defaults.yaml           # implicit base merged under every file
+│   ├── ciena.base.yaml          # abstract: true — shared Ciena behavior
+│   ├── ciena_rls.yaml           # extends: ciena.base
+│   ├── fuji_1finity_x100.base.yaml   # abstract base for the X100 family
+│   ├── fuji_1finity_s100.yaml   # extends: fuji_1finity_x100.base
+│   └── ...
+├── lua/                         # companion Lua, same basename as YAML
+├── schema/ne_schema.json        # JSON Schema for validation
+├── src/                         # warehouse + workers
+└── nclan-seed/                  # frame_link → nfdb app.ne.seed events</pre>
+    <p class="muted">Conventions: filename matches <code>ne_type:</code> lowercased · <code>_defaults.yaml</code> merged under every file ·
+       inherit one parent via <code>extends:</code> · abstract bases group shared behavior.</p>
+  </section>
+
+  <!-- 10 YAML SCHEMA -->
+  <section class="slide">
+    <h2><span class="num">7</span>The NE YAML</h2>
+    <pre class="tight">ne_type: CIENA_RLS              # must match clan.c dtype enum
+extends: ciena.base             # optional: inherit a parent
+display_name: "Ciena RLS"
+vendor: ciena
+schema_version: 1
+
+transport:
+  protocol: [ssh, telnet]       # list = preferred order, fallback
+  banner_timeout_s: 30
+prompt:
+  primary_regex:  '[-a-zA-Z0-9/:^ #]+#'
+  need_newline_after_connect: true
+keepalive:  { enabled: true, interval_s: 600, command: "exec ping %h\n" }
+paging:     { more_pattern: '--More-- or (q)uit', more_response: " " }
+post_command:   [...]           # declarative step language
+disconnect_steps: [...]
+lua_module: ciena_rls.lua       # REQUIRED — exposes login()</pre>
+    <p class="muted">A minimal file is ~6 lines — or 2–3 when it <code>extends:</code> a base.</p>
+  </section>
+
+  <!-- 11 INHERITANCE -->
+  <section class="slide">
+    <h2><span class="num">7.5</span>Inheritance — <code>extends:</code> + abstract bases</h2>
+    <div class="two">
+      <div>
+        <h3>Merge order</h3>
+        <pre class="tight">_defaults.yaml
+   → [ extends chain, root first ]
+      → this file   (wins)</pre>
+        <ul>
+          <li>Maps <b>deep-merge</b>, derived wins</li>
+          <li>Lists <b>replace</b> wholesale</li>
+          <li>Multi-level, single parent</li>
+          <li><code>abstract: true</code> = template only, never registered</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Example: Fuji X100 family</h3>
+        <pre class="tight">fuji_1finity_x100.base.yaml  abstract
+  ├ s100.yaml  extends → S100 dtype
+  ├ t100.yaml  extends → T100 dtype
+  └ l1xx.yaml  extends → L1XX dtype</pre>
+        <p class="muted">Three real dtypes, behavior written <span class="accent2">once</span>.
+           Generalizes to vendor bases (<code>ciena.base</code>) and transport bases.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 STEP LANGUAGE + LUA -->
+  <section class="slide">
+    <h2><span class="num">8–9</span>Step Language &amp; Lua Bridge</h2>
+    <div class="two">
+      <div>
+        <h3>Declarative steps</h3>
+        <p class="muted">For <code>post_command</code> / <code>disconnect_steps</code> — bodies are mostly data.</p>
+        <p>Ops: <code>expect</code> · <code>send</code> · <code>expect_send</code> · <code>branch</code> · <code>label</code>/<code>goto</code> · <code>set</code> · <code>lua</code></p>
+        <p class="muted">Paging drains automatically; step budget guards runaway loops.</p>
+      </div>
+      <div>
+        <h3>Login lives in Lua</h3>
+        <pre class="tight">function M.login(session, global, args)
+  -- banner detection, credential
+  -- branching, prompt capture …
+end</pre>
+        <p class="muted">Login dialogues are inherently imperative — the step language was awkward for them.
+           <code>session</code> API: <code>send</code>/<code>expect</code>/<code>get_var</code>/<code>fail</code>.</p>
+      </div>
+    </div>
+    <p><span class="accent">Reserved session vars</span> (bridge-populated): <code>user · password · p_enable · p_read · p_write · card_type · host · ne_type · slot · neid</code></p>
+  </section>
+
+  <!-- 13 EVENTING -->
+  <section class="slide">
+    <h2><span class="num">11</span>NE-Lifecycle Eventing — the nfdb bus</h2>
+    <p class="lead">One ingestion path for <span class="accent">seed</span> and <span class="accent">runtime</span>: a ZMQ <b>SUB</b> socket on the nfdb pub/sub broker (lives in <code>niimxd</code>).</p>
+    <pre class="tight"> nclan-seed ──PUBLISH app.ne.seed──┐
+ (reads frame_link, startup)       ├─► nfdb XPUB ─► clan SUB ─► dispatch ─► open/close
+ ne-DB writes ──db.ne.add/update/  ┘   nfdb_pub.sock           (app.ne. + db.ne.)
+   delete (runtime, auto)</pre>
+    <table>
+      <tr><th>Topic</th><th>Action</th></tr>
+      <tr><td><code>app.ne.seed</code> / <code>db.ne.add</code></td><td>Open if dtype owned (idempotent)</td></tr>
+      <tr><td><code>db.ne.update</code></td><td>Close + reopen (re-applies any change)</td></tr>
+      <tr><td><code>db.ne.delete</code></td><td>Close the session</td></tr>
+    </table>
+    <p class="muted">Events are two frames <code>[topic][yaml]</code>, <b>identity only</b> (neid, dtype, ip, tid, slot) — no credentials on the bus.</p>
+  </section>
+
+  <!-- 14 SEEDING -->
+  <section class="slide">
+    <h2><span class="num">4.4 · 11.5</span>Seeding — <code>nclan-seed</code></h2>
+    <ul>
+      <li><span class="accent2">The warehouse never reads <code>frame_link</code>.</span> A standalone CLI does.</li>
+      <li><code>nclan-seed</code> walks <code>frame_link</code> and <code>PUBLISH</code>es one <code>app.ne.seed</code> per NE</li>
+      <li>The warehouse is seeded by <span class="accent">consuming those events</span> — same code path as runtime</li>
+      <li>Startup order: subscribe <b>first</b>, then <code>fork</code>/<code>exec</code> the seeder (pub/sub is non-durable)</li>
+      <li>Idempotent &amp; re-runnable — duplicate/already-open = no-op; re-seed = just re-run it</li>
+    </ul>
+    <p class="muted">One seeder run feeds every consumer (clan-rewrite, ncland, …). Each picks the dtypes it owns.</p>
+  </section>
+
+  <!-- 15 LOADER STARTUP -->
+  <section class="slide">
+    <h2><span class="num">10.1</span>Warehouse Startup</h2>
+    <pre class="tight">1  parse CLI flags
+2  install signalfd (SIGTERM/SIGHUP) → epoll
+3  scan ne/*.yaml — resolve extends, detect cycles
+4  per file: merge chain → validate → compile regexes → check lua_module
+5  build the registry  (ne_type → entry)
+6  bind ZMQ ROUTER, register ZMQ_FD in epoll
+7  connect nfdb SUB (app.ne. + db.ne.), register fd     ← subscribe first
+8  fork N workers (socketpair ctl_sock each)
+9  fork/exec nclan-seed → app.ne.seed events arrive on the SUB
+10 enter the epoll loop
+11 log: loaded=N types, workers=M, nfdb=ok|degraded</pre>
+  </section>
+
+  <!-- 16 TEST + CUTOVER -->
+  <section class="slide">
+    <h2><span class="num">13</span>Validation &amp; Cutover</h2>
+    <div class="two">
+      <div>
+        <h3>Proving parity</h3>
+        <ul>
+          <li><b>Static CI</b> — YAML validates, regexes compile, <code>ne_type</code>↔dtype round-trip</li>
+          <li><b>Replay</b> — capture live clan.c byte traces; replay against rewrite (≥20 clean to graduate)</li>
+          <li><b>Shadow</b> — both backends run; responses diffed daily; 7 clean days to promote</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Per-NE state machine</h3>
+        <pre class="tight">legacy-only
+   → shadow
+      → primary
+         → legacy-removed</pre>
+        <p class="muted">Reversible at every step. Last step is a per-NE PR deleting the C code. Never rushed.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 STATUS -->
+  <section class="slide">
+    <h2>Where We Are</h2>
+    <p class="muted"><code>ncland</code> = the living rewrite. Process model, transport, ssh/telnet, conn lifecycle, and the test harness already exist.</p>
+    <div class="grid-status">
+      <span><span class="dot d-ok"></span>Warehouse / worker / transport / conn</span><span class="accent2">built</span>
+      <span><span class="dot d-ok"></span>NE event consumer (SUB → parse → dispatch)</span><span class="accent2">built &amp; unit-tested</span>
+      <span><span class="dot d-ok"></span>Seed formatter + round-trip compatibility</span><span class="accent2">built &amp; unit-tested</span>
+      <span><span class="dot d-wait"></span><code>nclan-seed</code> binary · live integration</span><span class="warn">gated on nfdb merge</span>
+      <span><span class="dot d-wait"></span>YAML loader (extends/abstract) · Lua bridge</span><span class="warn">greenfield</span>
+    </div>
+    <p class="meta">66 unit tests passing on the recovered base. The NE-lifecycle bus (nfdb, merging into <code>niimxd</code>) is the one external prerequisite.</p>
+  </section>
+
+  <!-- 18 OPEN QUESTIONS -->
+  <section class="slide">
+    <h2><span class="num">14</span>Open Questions</h2>
+    <ul>
+      <li><b>nfdb merge timeline</b> — the event bus must land before eventing integrates</li>
+      <li><b>Runtime <code>db.ne.*</code> producer + schema</b> — who writes the ne-DB, and the exact YAML field names</li>
+      <li><b>Client → endpoint discovery</b> — how clients learn which daemon owns which dtype</li>
+      <li><b>Worker credential source</b> — where workers fetch NE secrets at session-open (events are identity-only)</li>
+      <li><b>Lua runtime &amp; YAML parser</b> — LuaJIT vs PUC-Rio; libyaml vs yaml-cpp</li>
+      <li><b>RHEL 7 confirmation</b> — legacy clan.c stays for RHEL 7</li>
+    </ul>
+  </section>
+
+  <!-- 19 CLOSING -->
+  <section class="slide center">
+    <div class="kicker">Summary</div>
+    <h1>Config, not code.</h1>
+    <p class="lead">Per-NE behavior becomes <span class="accent">data</span> (YAML) + <span class="accent">scripts</span> (Lua).
+       New NE types ship without touching C. Cutover is per-NE and reversible. Seeding and runtime
+       lifecycle flow through <span class="accent2">one event path</span>.</p>
+    <div class="meta">clan-rewrite · ncland &nbsp;·&nbsp; Dan Nuzzo &nbsp;·&nbsp; dnuzzo@lightriver.com</div>
+  </section>
+
+</div>
+
+<footer>
+  <span><span class="nav" onclick="go(-1)">‹ prev</span> <span class="nav" onclick="go(1)">next ›</span></span>
+  <span>clan-rewrite — YAML-driven NE Configuration</span>
+  <span id="count">1 / 19</span>
+</footer>
+
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach(function(s,k){ s.classList.toggle('active', k===i); });
+    document.getElementById('count').textContent = (i+1)+' / '+slides.length;
+    document.getElementById('bar').style.width = ((i+1)/slides.length*100)+'%';
+    if(location.hash !== '#'+(i+1)) history.replaceState(null,'','#'+(i+1));
+  }
+  function go(d){ show(i+d); }
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){ go(1); e.preventDefault(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ go(-1); e.preventDefault(); }
+    else if(e.key==='Home'){ show(0); }
+    else if(e.key==='End'){ show(slides.length-1); }
+    else if(e.key==='f'){ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+  });
+  document.getElementById('deck').addEventListener('click', function(e){
+    if(e.target.closest('a, pre, .nav')) return;
+    var x = e.clientX / window.innerWidth;
+    go(x < 0.30 ? -1 : 1);
+  });
+  var start = parseInt((location.hash||'#1').slice(1),10);
+  show(isNaN(start)?0:start-1);
+</script>
+</body>
+</html>
