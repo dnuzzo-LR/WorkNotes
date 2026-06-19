@@ -7,7 +7,7 @@ _Updated 2026-06-17_
 ### Customer Issue
 
 - [ ] [4039](https://github.com/lightriversoftware/netflex/issues/4039) (Sprint 14) — [SUPPORT] Lumen Local ADTRAN TOTAL ACCESS 3000 RT Login Failure – Debug Logs with RT/GNE Watch + GNE Trace (Manual Login Works)
-- [ ] [4835](https://github.com/lightriversoftware/netflex/issues/4835) (Sprint 14) — [SUPPORT] Ciena Core Director link flaps DOWN — RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck (lanalive.c)
+- [ ] [4835](https://github.com/lightriversoftware/netflex/issues/4835) (Sprint 14) — [SUPPORT] Ciena Core Director link flaps DOWN — RTRV-NETYPE DENY leaves LAN_GET_LINK flag stuck (lanalive.c) [Create PR with CHange]
 
 ### Planning
 
