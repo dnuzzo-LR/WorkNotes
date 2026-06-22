@@ -172,3 +172,9 @@ None.
 - **Created:** 2026-06-15
 - **Updated:** 2026-06-19
 - **Environment:** Rocky Linux 8.10, kernel 4.18.0-553.123.1.el8_10, glibc 2.28; FEP holmvm17, BEPs holmvm13/14/18/19, GR-standby FEP linc12vm9
+
+## My Notes
+
+* add gate check when checking the rem_num in frame_link
+* be83ae17b39973a94d91f5301d445e26dbcc1caa
+  
