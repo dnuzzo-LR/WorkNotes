@@ -3,7 +3,7 @@ issue: 4590
 repo: lightriversoftware/netflex
 state: OPEN
 status: Ready
-sprint: Sprint 14
+sprint: Sprint 15
 title: 1830 PSS Support RA5PB as separate card from RA5P — Equipment Management
 type: Development (enhancement)
 release: 5.4.0
@@ -21,7 +21,7 @@ url: https://github.com/lightriversoftware/netflex/issues/4590
 
 ## Summary
 
-Equipment Management sub-task of parent #4583 (1830 PSS — support the RA5PB as a separate card type from the RA5P). Support level ODC, targeted at release 5.4.0. Covers the equipment-management work needed to model the RA5PB distinctly from the RA5P.
+Equipment Management sub-task of parent #4583 (1830 PSS — support the RA5PB as a separate card type from the RA5P). Support level ODC, targeted at release 5.4.0. Covers the equipment-management work needed to model the RA5PB distinctly from the RA5P. The issue body is the standard sub-task stub (parent reference, support level, targeted release, an unchecked Product checklist).
 
 ## Resolution / Notes
 
@@ -37,4 +37,11 @@ None.
 - **Parent Issue:** #4583 (1830 PSS Support RA5PB as separate card from RA5P)
 - **Support Level:** ODC
 - **Targeted Release:** 5.4.0
-- **Project Status:** Ready (Sprint 14)
+- **Milestone:** 5.4.0
+- **Author:** netflex-workflow-bot (app)
+- **Assignee:** Dan Nuzzo (dnuzzo-LR)
+- **Project Status:** Ready (Sprint 15)
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

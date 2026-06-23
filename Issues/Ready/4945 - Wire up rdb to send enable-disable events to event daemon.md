@@ -3,9 +3,8 @@ issue: 4945
 repo: lightriversoftware/netflex
 state: OPEN
 status: Ready
-title: Wire up rdb to send enable/disable events to the event daemon
+title: "[DEV] wire up rdb to send enable/disable events to event daemon"
 type: Development (enhancement)
-process_group: New Device
 milestone: 5.4.1
 author: dnuzzo-LR
 assignee: dnuzzo-LR
@@ -20,7 +19,7 @@ url: https://github.com/lightriversoftware/netflex/issues/4945
 
 ## Summary
 
-Wire `rdb` to publish enable/disable events to the event daemon, so subscribers (e.g. the Link UP/DOWN event added in #4944) receive them. Category New Device, support level ODC. Part of the ncland effort (#4939–#4945).
+Wire `rdb` to publish enable/disable events to the event daemon, so subscribers receive them. A Development (enhancement), Category New Device, Support Level ODC. The issue body uses the standard new-device task checklist (all items unchecked) with no additional notes.
 
 ## Resolution / Notes
 
@@ -32,7 +31,17 @@ None.
 
 ## Metadata
 
+- **Status:** Ready (no sprint assigned)
+- **State:** OPEN
 - **Issue Type:** Development (enhancement)
 - **Category:** New Device
 - **Support Level:** ODC
-- **Project Status:** Ready (no sprint assigned)
+- **Milestone:** 5.4.1
+- **Author:** dnuzzo-LR (Dan Nuzzo)
+- **Assignee:** dnuzzo-LR (Dan Nuzzo)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

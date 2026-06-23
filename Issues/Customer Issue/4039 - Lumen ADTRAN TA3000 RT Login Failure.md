@@ -3,8 +3,8 @@ issue: 4039
 repo: lightriversoftware/netflex
 state: OPEN
 status: Customer Issue
-sprint: Sprint 14
-title: Lumen Local ADTRAN TOTAL ACCESS 3000 RT Login Failure (manual login works)
+sprint: Sprint 15
+title: Lumen Local ADTRAN TOTAL ACCESS 3000 RT Login Failure – Debug Logs with RT/GNE Watch + GNE Trace (Manual Login Works)
 customer: Lumen
 priority: Required this Release
 type: Support (bug)
@@ -55,4 +55,12 @@ An ADTRAN Total Access 3000 RT (behind a Generic TL1 GNE, NE 8850) fails to log 
 - **Software Release Detected:** 5.3.0 (Build 29)
 - **Customer Affected:** Lumen
 - **Priority:** Required this Release
-- **Project Status:** Customer Issue (Sprint 14)
+- **Author:** hborreli-LR
+- **Assignee:** dnuzzo-LR
+- **Milestone:** 5.3.0
+- **Project Status:** Customer Issue (Sprint 15)
+- **Created:** 2026-05-13 · **Updated:** 2026-06-01
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

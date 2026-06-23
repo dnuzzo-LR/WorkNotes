@@ -4,7 +4,7 @@ repo: lightriversoftware/netflex
 state: OPEN
 status: Ready for QA
 sprint: Sprint 13
-title: retrofit prints to a log but not stdout, so it's missing from the upgrade logs
+title: retrofit will print to a log, but not to stdout, so it's missing from the upgrade logs
 customer: LightRiver Internal
 priority: Time Permitting
 type: Development (enhancement)
@@ -33,7 +33,7 @@ While testing an upgrade, it was failing but no retrofit output appeared in the 
 
 ## Resolution / Notes
 
-No resolution posted yet.
+No resolution posted yet. (netflex-workflow-bot marked "Ready for testing" on 2026-05-27.)
 
 ## Attachments
 
@@ -46,4 +46,12 @@ None.
 - **Software Release Detected:** 5.4.0 (Build 13)
 - **Customer Affected:** LightRiver Internal
 - **Priority:** Time Permitting
+- **Author:** dnuzzo-LR
+- **Assignee:** dnuzzo-LR
+- **Milestone:** 5.4.0
 - **Project Status:** Ready for QA (Sprint 13)
+- **Created:** 2026-04-29 · **Updated:** 2026-05-27
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

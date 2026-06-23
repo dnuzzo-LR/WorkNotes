@@ -3,10 +3,9 @@ issue: 4942
 repo: lightriversoftware/netflex
 state: OPEN
 status: In Progress
-sprint: Sprint 14
-title: Wire up message reading into the epoll loop and forwarding to screen
+sprint: Sprint 15
+title: "[DEV] Wire up message reading into the epoll loop and forwarding to screen"
 type: Development (enhancement)
-process_group: New Device
 milestone: 5.4.1
 author: dnuzzo-LR
 assignee: dnuzzo-LR
@@ -21,7 +20,7 @@ url: https://github.com/lightriversoftware/netflex/issues/4942
 
 ## Summary
 
-In the new `ncland` server, wire NE message reading into the epoll event loop and forward received messages to screen. Category New Device, support level ODC. Part of the ncland effort (#4939–#4945).
+In the new `ncland` server, wire NE message reading into the epoll event loop and forward received messages to screen. A Development (enhancement), Category New Device, Support Level ODC. The issue body uses the standard new-device task checklist (all items unchecked) with no additional notes.
 
 ## Resolution / Notes
 
@@ -33,7 +32,17 @@ None.
 
 ## Metadata
 
+- **Status:** In Progress (Sprint 15)
+- **State:** OPEN
 - **Issue Type:** Development (enhancement)
 - **Category:** New Device
 - **Support Level:** ODC
-- **Project Status:** In Progress (Sprint 14)
+- **Milestone:** 5.4.1
+- **Author:** dnuzzo-LR (Dan Nuzzo)
+- **Assignee:** dnuzzo-LR (Dan Nuzzo)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

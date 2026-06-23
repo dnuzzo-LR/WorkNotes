@@ -4,8 +4,8 @@ repo: lightriversoftware/netflex
 state: OPEN
 status: In Progress
 sprint: Sprint 10
-title: Praetorian Security Audit — Insufficient Password Policies
-type: Development (enhancement) / Project
+title: "[DEV][[PROJECT] Praetorian Security Audit Findings]Insufficient Password Policies [#3139]"
+type: Development (enhancement)
 milestone: 5.4.0
 author: fsantitoro-LR
 assignee: dnuzzo-LR, riweh-LR
@@ -14,7 +14,7 @@ updated: 2026-05-08
 url: https://github.com/lightriversoftware/netflex/issues/3144
 ---
 
-# Issue 3144 — [DEV][PROJECT Praetorian Security Audit Findings] Insufficient Password Policies [#3139]
+# Issue 3144 — [DEV][[PROJECT] Praetorian Security Audit Findings]Insufficient Password Policies [#3139]
 
 [View on GitHub](https://github.com/lightriversoftware/netflex/issues/3144)
 
@@ -39,8 +39,15 @@ Sub-task of the Praetorian Security Audit (#3139). Praetorian found that LightRi
 
 ## Metadata
 
-- **Issue Type:** Development (enhancement), sub-task / Project
+- **Issue Type:** Development (enhancement), labeled sub-task / project
 - **Parent Issue:** #3139 (Praetorian Security Audit Findings)
 - **Severity:** Medium
+- **Author:** fsantitoro-LR
+- **Assignees:** dnuzzo-LR, riweh-LR
 - **Milestone:** 5.4.0
 - **Project Status:** In Progress (Sprint 10)
+- **Created:** 2026-04-02 · **Updated:** 2026-05-08
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

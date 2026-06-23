@@ -3,6 +3,7 @@ issue: 4872
 repo: lightriversoftware/netflex
 state: OPEN
 status: Ready
+sprint: Sprint 15
 title: libmd.so calls unresolvable md_exit; fep_bep/bep_fep writers die on fresh spawn (5.4.026)
 type: bug
 release: 5.4.026
@@ -99,7 +100,8 @@ None.
 - **Issue:** [#4872](https://github.com/lightriversoftware/netflex/issues/4872)
 - **Repo:** lightriversoftware/netflex
 - **State:** OPEN
-- **Status:** Ready (no Sprint assigned)
+- **Status:** Ready
+- **Sprint:** Sprint 15
 - **Type:** bug
 - **Labels:** bug
 - **Software Release:** 5.4.026

@@ -3,7 +3,7 @@ issue: 4962
 repo: lightriversoftware/netflex
 state: OPEN
 status: Customer Issue
-title: LW Loopback from Equipment View form needs to show current loop state
+title: "[QA Testing] LW Loopback from Equipment View form needs to show current loop state"
 customer: LightRiver Internal
 priority: Important
 type: QA Testing (bug)
@@ -32,14 +32,6 @@ The Loopback form launched from the **Equipment View** does not reflect the port
 
 The Loopback dialog launched from the **Trace** form already behaves correctly: when a loop is already placed, it defaults to **Release**. The Equipment View form should match that behavior and support state retrieval.
 
-## Observed Behavior
-
-- Equipment View loopback form keeps Action at "Operate loopback" even after a loop is placed.
-- No option to remove/release the loop from the Equipment View form.
-- Re-navigating from Equipment View does not detect an existing loop.
-- The **Retrieve** button on the form is permanently grayed out.
-- By contrast, the Trace form's loop dialog correctly defaults to "Release" when a loop exists.
-
 ## Reproduction Steps
 
 1. From the Equipment View, place a loop on a port — the Loopback form launches.
@@ -48,15 +40,17 @@ The Loopback dialog launched from the **Trace** form already behaves correctly: 
 4. Note the Action still defaults to "Operate loopback" with no release option, and the Retrieve button is grayed out.
 5. Compare with the Trace form's loop dialog, which defaults to "Release" when a loop is already placed.
 
+## Observed Behavior
+
+- Equipment View loopback form keeps Action at "Operate loopback" even after a loop is placed.
+- No option to remove/release the loop from the Equipment View form.
+- Re-navigating from Equipment View does not detect an existing loop.
+- The **Retrieve** button on the form is permanently grayed out.
+- By contrast, the Trace form's loop dialog correctly defaults to "Release" when a loop exists.
+
 ## Resolution / Notes
 
-No engineer resolution posted yet. The issue is **OPEN**.
-
-An automated RCA bot posted a **DRAFT / UNVERIFIED** root-cause analysis (2026-06-17), summarized below — to be confirmed by an engineer:
-
-> **netflex-workflow-bot — 2026-06-17:** The Trace dialog and the Equipment-View dialog are two different implementations. The Trace path (`gui/src/web/loopback.c` → `add_lpbk_link()`) is the only place that seeds the Action default from the current loop state (`looped == 0 ? 'operate' : 'release'`). The Equipment-View *EM Loopback* menu instead opens the flex-form `eqpt_mgmt_loopback` (`TAB_EQPT_LOOPBACK`), whose per-vendor `*_loopback_flds` define the Action pulldown defaulting to the first option ("OPERATE") with no logic to seed it to RELEASE from the retrieved loop state. The loopback retrieve callback (e.g. `portprov_wsm_rtrv_lpbk_cb()`) only writes a read-only "Current Status" string and never updates the Action default.
->
-> **Recommended fix:** Mirror the Trace behavior on the Equipment-View flex-form path — when the retrieve reports an active loop for a direction, seed that direction's Action pulldown default to RELEASE (OPERATE otherwise), give the Action pulldowns a backing default variable, and ensure the Equipment-View tab actually runs the loopback retrieve. Confidence: **MEDIUM** — the exact `portprov_*` vendor file depends on the NE/card type, which the issue does not state.
+No engineer resolution posted yet. The issue is **OPEN**. (An automated RCA-bot draft analysis was posted but is unverified workflow-bot content and is not treated as a resolution.)
 
 ## Attachments
 
@@ -66,7 +60,6 @@ An automated RCA bot posted a **DRAFT / UNVERIFIED** root-cause analysis (2026-0
 
 ## Metadata
 
-- **Issue:** #4962
 - **Status:** Customer Issue
 - **State:** OPEN
 - **Priority:** Important
@@ -82,3 +75,7 @@ An automated RCA bot posted a **DRAFT / UNVERIFIED** root-cause analysis (2026-0
 - **Assignee:** dnuzzo-LR (Dan Nuzzo)
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

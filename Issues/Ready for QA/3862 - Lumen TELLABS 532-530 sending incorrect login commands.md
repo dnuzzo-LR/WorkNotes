@@ -4,7 +4,7 @@ repo: lightriversoftware/netflex
 state: OPEN
 status: Ready for QA
 sprint: Sprint 14
-title: Lumen Local TELLABS 532/530 (NE type 5) sending incorrect login commands to the NE
+title: Lumen Local TELLABS 532/530 NE type number 5 in nF is sending the incorrect login commands to the NE
 customer: Lumen
 priority: Required this Release
 type: Support (bug)
@@ -45,7 +45,6 @@ No closure comment yet — issue is **OPEN** and currently **Ready for QA**.
 - **hborreli-LR (2026-05-06):** Provided the correct 532/530 security-level commands — enter with `UTL::PRIVATE, mode!` (mode = TEST/PROV/ADMN), log off with `UTL::PUBLIC!`. Acknowledged and updated the AIR.
 - **netflex-workflow-bot (2026-06-08):** "Ready for testing."
 - **hborreli-LR (2026-06-18):** "Waiting on patch to test in production."
-- Implementation tracked under sub-issue #4143 (enhance lansim to support the 532/530 PDS login process).
 
 ## Attachments
 
@@ -62,13 +61,9 @@ No closure comment yet — issue is **OPEN** and currently **Ready for QA**.
 - **Priority:** Required this Release
 - **Author:** hborreli-LR
 - **Assignees:** dnuzzo-LR, hborreli-LR
+- **Milestone:** 5.4.0
 - **Project Status:** Ready for QA (Sprint 14)
 - **Created:** 2026-05-05 · **Updated:** 2026-06-18
-
-
-### Resolution
-
-I have a fix for this, in a git stash on main "2026-05-03-TBLS530-login"
 
 ## My Notes
 * c17a219309f2dde66e55477fa505afeca2ad527e

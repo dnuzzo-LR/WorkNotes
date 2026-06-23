@@ -4,8 +4,8 @@ repo: lightriversoftware/netflex
 state: OPEN
 status: In Progress
 sprint: Sprint 6
-title: netFLEX Penetration Test Jan 20-30 Items
-type: Development (enhancement) / Project
+title: "[PROJECT] netFLEX Penetration Test Jan 20-30 Items"
+type: Project
 milestone: 5.4.0
 author: tmasse-LR
 assignee: dnuzzo-LR, riweh-LR
@@ -24,7 +24,7 @@ url: https://github.com/lightriversoftware/netflex/issues/168
 
 Tracking item for netFLEX's January 2026 penetration test (GUI testing starting Jan 20, API testing starting Jan 26). Dan's work items focus on the API/Swagger side; Reuben (riweh) tracks the environment setup (companion item #167).
 
-## Tasks
+## Reproduction Steps
 
 **Dan (this issue, #168):**
 - Provide updated Swagger command list.
@@ -41,7 +41,7 @@ Tracking item for netFLEX's January 2026 penetration test (GUI testing starting 
 
 ## Resolution / Notes
 
-- **dnuzzo-LR (2026-01-30):** Posted "First Failure" — attached the Praetorian/depth API critical-update PDF (`depth.security.lightriver.netFLEX.API.jan2026.critical.update.pdf`).
+- **dnuzzo-LR (2026-01-30):** Posted "First Failure" — attached the depth/Praetorian API critical-update PDF (`depth.security.lightriver.netFLEX.API.jan2026.critical.update.pdf`).
 
 ## Attachments
 
@@ -49,7 +49,11 @@ Tracking item for netFLEX's January 2026 penetration test (GUI testing starting 
 
 ## Metadata
 
-- **Issue Type:** Development (enhancement) / Project tracking
+- **Issue Type:** Project tracking (enhancement)
 - **Milestone:** 5.4.0
 - **Related:** #167 (Reuben's environment-setup tracking item)
 - **Project Status:** In Progress (Sprint 6)
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

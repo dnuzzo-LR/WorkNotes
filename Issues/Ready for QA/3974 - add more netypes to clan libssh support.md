@@ -28,7 +28,7 @@ Enhancement to extend `clan`'s libssh-based connection support to additional NE 
 
 ## Resolution / Notes
 
-No resolution posted yet.
+No resolution posted yet. (netflex-workflow-bot marked "Ready for testing" on 2026-06-08.)
 
 ## Attachments
 
@@ -41,4 +41,12 @@ None.
 - **Software Release Detected:** 5.3.1
 - **Customer Affected:** LightRiver Internal
 - **Priority:** Required this Release
+- **Author:** dnuzzo-LR
+- **Assignee:** dnuzzo-LR
+- **Milestone:** 5.3.1
 - **Project Status:** Ready for QA (Sprint 14)
+- **Created:** 2026-05-11 · **Updated:** 2026-06-08
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->

@@ -3,9 +3,8 @@ issue: 4943
 repo: lightriversoftware/netflex
 state: OPEN
 status: Ready
-title: Update clan_fe to forward CLI commands to ncland based on JSON file
+title: "[DEV] Update clan_fe to forward cli commands to ncland based on JSON file"
 type: Development (enhancement)
-process_group: New Device
 milestone: 5.4.1
 author: dnuzzo-LR
 assignee: dnuzzo-LR
@@ -20,7 +19,7 @@ url: https://github.com/lightriversoftware/netflex/issues/4943
 
 ## Summary
 
-Update `clan_fe` so it forwards CLI commands to the new `ncland` server, driven by a JSON file that specifies which commands/NEs route to ncland. Category New Device, support level ODC. Part of the ncland effort (#4939–#4945).
+Update `clan_fe` so it forwards CLI commands to `ncland`, driven by a JSON file that specifies the routing. A Development (enhancement), Category New Device, Support Level ODC. The issue body uses the standard new-device task checklist (all items unchecked) with no additional notes.
 
 ## Resolution / Notes
 
@@ -32,7 +31,17 @@ None.
 
 ## Metadata
 
+- **Status:** Ready (no sprint assigned)
+- **State:** OPEN
 - **Issue Type:** Development (enhancement)
 - **Category:** New Device
 - **Support Level:** ODC
-- **Project Status:** Ready (no sprint assigned)
+- **Milestone:** 5.4.1
+- **Author:** dnuzzo-LR (Dan Nuzzo)
+- **Assignee:** dnuzzo-LR (Dan Nuzzo)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+
+## My Notes
+
+<!-- Your notes below are preserved across syncs. -->
