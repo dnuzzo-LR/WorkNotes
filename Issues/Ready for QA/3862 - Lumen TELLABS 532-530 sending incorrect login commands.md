@@ -69,3 +69,6 @@ No closure comment yet — issue is **OPEN** and currently **Ready for QA**.
 ### Resolution
 
 I have a fix for this, in a git stash on main "2026-05-03-TBLS530-login"
+
+## My Notes
+* c17a219309f2dde66e55477fa505afeca2ad527e

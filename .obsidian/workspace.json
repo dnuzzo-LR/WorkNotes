@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Issues/Ready/4872 - libmd.so calls unresolvable md_exit writers die on fresh spawn.md",
+                "file": "Issues/Ready for QA/3862 - Lumen TELLABS 532-530 sending incorrect login commands.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "4872 - libmd.so calls unresolvable md_exit writers die on fresh spawn"
+              "title": "3862 - Lumen TELLABS 532-530 sending incorrect login commands"
             }
           }
         ]
@@ -174,8 +174,8 @@
   },
   "active": "058875ad3ab5aa27",
   "lastOpenFiles": [
-    "Issues/Ready/4864 - bep_fep_frm_wtr segfaults in bffw_count_up_ne.md",
     "Issues/Ready/4872 - libmd.so calls unresolvable md_exit writers die on fresh spawn.md",
+    "Issues/Ready/4864 - bep_fep_frm_wtr segfaults in bffw_count_up_ne.md",
     "Issues/Ready/4864 - bep_fep_frm_wtr segfaults in bffw_count_up_ne.md.tmp.8559.52e98d386046",
     "Issues/3684 [DEV][Charter: Infinera ADP Not Bu.md",
     "Issues/Customer Issue/4835 - Ciena Core Director RTRV-NETYPE DENY stuck link.md",
