@@ -78,95 +78,15 @@
       }
     ],
     "direction": "horizontal",
-    "width": 657.5026054382324
+    "width": 471.5026054382324
   },
   "right": {
     "id": "60ccb50657fc617a",
     "type": "split",
-    "children": [
-      {
-        "id": "052926581dcfdfa0",
-        "type": "tabs",
-        "children": [
-          {
-            "id": "ef79a7933702cd6c",
-            "type": "leaf",
-            "state": {
-              "type": "backlink",
-              "state": {
-                "file": "ncland notes.md",
-                "collapseAll": false,
-                "extraContext": false,
-                "sortOrder": "alphabetical",
-                "showSearch": false,
-                "searchQuery": "",
-                "backlinkCollapsed": false,
-                "unlinkedCollapsed": true
-              },
-              "icon": "links-coming-in",
-              "title": "Backlinks for ncland notes"
-            }
-          },
-          {
-            "id": "dc0eecfa64c205fd",
-            "type": "leaf",
-            "state": {
-              "type": "outgoing-link",
-              "state": {
-                "file": "ncland notes.md",
-                "linksCollapsed": false,
-                "unlinkedCollapsed": true
-              },
-              "icon": "links-going-out",
-              "title": "Outgoing links from ncland notes"
-            }
-          },
-          {
-            "id": "f9377f2ea636c034",
-            "type": "leaf",
-            "state": {
-              "type": "tag",
-              "state": {
-                "sortOrder": "frequency",
-                "useHierarchy": true,
-                "showSearch": false,
-                "searchQuery": ""
-              },
-              "icon": "lucide-tags",
-              "title": "Tags"
-            }
-          },
-          {
-            "id": "77f53977e90482c2",
-            "type": "leaf",
-            "state": {
-              "type": "outline",
-              "state": {
-                "file": "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
-                "followCursor": false,
-                "showSearch": false,
-                "searchQuery": ""
-              },
-              "icon": "lucide-list",
-              "title": "Outline of 4039 - Lumen ADTRAN TA3000 RT Login Failure"
-            }
-          },
-          {
-            "id": "604b8d6a0f05f484",
-            "type": "leaf",
-            "state": {
-              "type": "git-view",
-              "state": {},
-              "icon": "git-pull-request",
-              "title": "Source Control"
-            }
-          }
-        ],
-        "currentTab": 4
-      }
-    ],
+    "children": [],
     "direction": "horizontal",
-    "width": 200
+    "width": 502.5,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -184,10 +104,12 @@
   },
   "active": "401b6df1aab64a7c",
   "lastOpenFiles": [
+    "ME DO WHAT.md",
+    "TODO.md",
+    "README.md",
+    "Issues/Customer Issue/4962 - LW Loopback from Equipment View form needs to show current loop state.md",
     "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
     "DevOps/Less Command Keys.md",
-    "Issues/Customer Issue/4962 - LW Loopback from Equipment View form needs to show current loop state.md",
-    "TODO.md",
     "Issues/Customer Issue/4908 - gr_restore Pass4 fails to move files with special chars in name.md",
     "Issues/Ready/4590 - 1830 PSS RA5PB Equipment Management.md",
     "Issues/Ready for QA/3862 - Lumen TELLABS 532-530 sending incorrect login commands.md",
@@ -210,11 +132,9 @@
     "superpowers/plans/2026-06-05-ncland-lua-login.md",
     "superpowers/plans/2026-06-04-ncland-yaml-loader.md",
     "superpowers/plans/2026-06-04-nclan-seed-plan.md",
-    "README.md",
     "ncland notes.md",
     "GAPS.md",
     "Issues/In Progress/4942 - Wire up message reading into epoll loop and forwarding to screen.md",
-    "superpowers/specs/2026-06-17-clan-util-ncland-route-design.md",
     "superpowers/specs",
     "superpowers/presentations/2026-06-04-clan-rewrite.html",
     "superpowers/presentations",

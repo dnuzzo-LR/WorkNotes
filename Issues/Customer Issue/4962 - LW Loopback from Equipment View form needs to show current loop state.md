@@ -79,3 +79,14 @@ No engineer resolution posted yet. The issue is **OPEN**. (An automated RCA-bot 
 ## My Notes
 
 <!-- Your notes below are preserved across syncs. -->
+
++ need to talk to mattK about what the olpbk is doing for this port. should i be using the port_is_looped_rdb() call maybe
+
+
+```  Sketch (per-handler retrieve enable, e.g. em_inf_g40_lpbk_form):
+
+      looped = port_is_looped_rdb(r->neid, rdb_aid, r->lvl, r->plvl);
+  -   set_portprov_button_state(FLEX_BUTTON_RETRIEVE, BUTTON_STATE_PROTECTED);
+  +   set_portprov_button_state(FLEX_BUTTON_RETRIEVE, BUTTON_STATE_SENSITIVE);
+      send_portprov_buttons();
+```
