@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "1ea7df8d01f97dff",
+        "id": "a73906c19d398da4",
         "type": "tabs",
         "children": [
           {
-            "id": "47026c629121655a",
+            "id": "401b6df1aab64a7c",
             "type": "leaf",
             "state": {
-              "type": "split-diff-view",
+              "type": "markdown",
               "state": {
-                "aFile": ".obsidian/workspace.json",
-                "bFile": ".obsidian/workspace.json",
-                "aRef": ""
+                "file": "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "diff",
-              "title": "Diff: workspace.json  (Working Tree)"
+              "icon": "lucide-file",
+              "title": "4039 - Lumen ADTRAN TA3000 RT Login Failure"
             }
           }
         ]
@@ -142,13 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "ncland notes.md",
+                "file": "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of ncland notes"
+              "title": "Outline of 4039 - Lumen ADTRAN TA3000 RT Login Failure"
             }
           },
           {
@@ -166,7 +166,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 493.5
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -182,8 +182,11 @@
       "realclaudian:Open Claudian": false
     }
   },
-  "active": "47026c629121655a",
+  "active": "401b6df1aab64a7c",
   "lastOpenFiles": [
+    "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+    "DevOps/Less Command Keys.md",
+    "Issues/Customer Issue/4962 - LW Loopback from Equipment View form needs to show current loop state.md",
     "TODO.md",
     "Issues/Customer Issue/4908 - gr_restore Pass4 fails to move files with special chars in name.md",
     "Issues/Ready/4590 - 1830 PSS RA5PB Equipment Management.md",
@@ -212,9 +215,6 @@
     "GAPS.md",
     "Issues/In Progress/4942 - Wire up message reading into epoll loop and forwarding to screen.md",
     "superpowers/specs/2026-06-17-clan-util-ncland-route-design.md",
-    "superpowers/specs/2026-06-16-ncland-mqueue-ctl-design.md",
-    "superpowers/specs/2026-06-12-ncland-sim-tool-design.md",
-    "superpowers/specs/2026-06-11-ncland-stepper-3b-design.md",
     "superpowers/specs",
     "superpowers/presentations/2026-06-04-clan-rewrite.html",
     "superpowers/presentations",
