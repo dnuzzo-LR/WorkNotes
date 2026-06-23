@@ -110,3 +110,5 @@ None.
 - **Updated:** 2026-06-19
 - **Environment:** Rocky Linux 8.10, kernel 4.18.0-553.123.1.el8_10, glibc 2.28; FEP holmvm17, BEPs holmvm13/14/18/19, GR-standby FEP linc12vm9
 - **Related:** #4864 (separate SIGSEGV defect in same release)
+
+## My Notes
