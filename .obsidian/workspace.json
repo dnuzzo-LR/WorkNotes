@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Issues/Customer Issue/4908 - gr_restore Pass4 fails to move files with special chars in name.md",
+                "file": "Issues/Ready/4590 - 1830 PSS RA5PB Equipment Management.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "4908 - gr_restore Pass4 fails to move files with special chars in name"
+              "title": "4590 - 1830 PSS RA5PB Equipment Management"
             }
           }
         ],
@@ -68,7 +68,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "RA5PB",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -89,7 +89,8 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
