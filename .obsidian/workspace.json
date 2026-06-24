@@ -83,7 +83,77 @@
   "right": {
     "id": "60ccb50657fc617a",
     "type": "split",
-    "children": [],
+    "children": [
+      {
+        "id": "709ab74d24ff0408",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "51d08d2e4a1d3a54",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for 4039 - Lumen ADTRAN TA3000 RT Login Failure"
+            }
+          },
+          {
+            "id": "77dadd9936556243",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from 4039 - Lumen ADTRAN TA3000 RT Login Failure"
+            }
+          },
+          {
+            "id": "7b3f933a835c1693",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "230852f7f0e7874d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of 4039 - Lumen ADTRAN TA3000 RT Login Failure"
+            }
+          }
+        ]
+      }
+    ],
     "direction": "horizontal",
     "width": 502.5,
     "collapsed": true
