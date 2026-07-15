@@ -1,0 +1,20 @@
+{
+    "Body": {
+        "Screen": "CLRINQ",
+        "Command": "FIND",
+        "Region": "AIMSPI03",
+        "CircuitId": "12/ABCD/123456/XY"
+    },
+    "Header": {
+        "ATTUID": "M50527",
+        "CompletionTime": "07/15/2026 14:59:08",
+        "WebRequestId": "M505276A57A03B64F0B",
+        "StatusSummary": {
+            "Result": "Failed",
+            "TIRKSMessage": {
+                "MessageCode": "Could",
+                "MessageDescription": "Not Find 12/ABCD/123456/XY57   ^              L B                                                                       r                                       `       ^        B     Bh    00   @      ^       4804   ^              B        (    (0}$         h   ^  `v     B        F    :      ^           B       eh"
+            }
+        }
+    }
+}
