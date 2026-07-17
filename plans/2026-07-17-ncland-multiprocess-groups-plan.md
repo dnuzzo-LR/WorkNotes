@@ -20,6 +20,7 @@
 |---|---|
 | `cnc/ncland/src/ncland_router.h` | Router types + prototypes: `router_child_t`, `ncland_router_t`, `router_init/spawn_child/route_msg/run/shutdown`. |
 | `cnc/ncland/src/ncland_router.cpp` | Router process implementation: config→children spawn, epoll on `/ncland_ctl`+signalfd+timerfd, SIGCHLD-driven backoff restart, forward `dacs_msg` to per-group child MQ, seed fork after all children up. |
+| `cnc/ncland/src/ncland_args.cpp` | (Added during Task 6.) `config_defaults` + `ncland_parse_args`. Extracted from `ncland.cpp` so the argv tests can link `ncland_parse_args` without pulling in `main()` (which conflicts with the nfunit test framework's own `main`). |
 | `cnc/ncland/src/test/fixtures/ncland_groups_good.json` | Two-group happy-path fixture used by parser + integration tests. |
 | `cnc/ncland/src/test/fixtures/ncland_groups_overlap.json` | Overlap fixture (parser must reject). |
 | `cnc/ncland/src/test/fixtures/ncland_groups_legacy.json` | Legacy top-level `"dtypes"` fixture (parser must reject with migration message). |
