@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "reviews/2026-06-15-mdzmq-review.md",
+                "file": "Issues/Customer Issue/5212 - LW 53.1 Lan procs not starting.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "2026-06-15-mdzmq-review"
+              "title": "5212 - LW 53.1 Lan procs not starting"
             }
           }
         ]
@@ -174,9 +174,12 @@
   },
   "active": "401b6df1aab64a7c",
   "lastOpenFiles": [
-    "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
     "ME DO WHAT.md",
+    "Issues/Customer Issue/5212 - LW 53.1 Lan procs not starting.md",
+    "Issues/Customer Issue/5212 - LW 53.1 Lan procs not starting.md.tmp.68075.badbe90befa2",
     "TODO.md",
+    "reviews/2026-06-15-mdzmq-review.md",
+    "Issues/Customer Issue/4039 - Lumen ADTRAN TA3000 RT Login Failure.md",
     "README.md",
     "Issues/Customer Issue/4962 - LW Loopback from Equipment View form needs to show current loop state.md",
     "DevOps/Less Command Keys.md",
@@ -203,13 +206,10 @@
     "superpowers/plans/2026-06-04-ncland-yaml-loader.md",
     "superpowers/plans/2026-06-04-nclan-seed-plan.md",
     "ncland notes.md",
-    "GAPS.md",
-    "Issues/In Progress/4942 - Wire up message reading into epoll loop and forwarding to screen.md",
     "superpowers/specs",
     "superpowers/presentations/2026-06-04-clan-rewrite.html",
     "superpowers/presentations",
     "superpowers/plans",
-    "superpowers",
     "Untitled.canvas",
     "DDM2 Card/Pasted image 20250212095954.png"
   ]
