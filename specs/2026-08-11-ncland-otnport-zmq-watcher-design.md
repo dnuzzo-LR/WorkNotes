@@ -277,16 +277,100 @@ Cases:
 - Broker restart recovery (relies on ZMQ auto-reconnect).
 - Multi-instance watcher pidfile guard — manual only.
 
-## Open items to resolve at plan time
-- Which field authoritatively carries "enabled" for an interface —
-  `es64_snmp_info.enabled` (c-tree) vs a PG column on ne_link_data /
-  ne_link_status. Determines whether watcher's fresh read is c-tree, PG, or
-  both.
-- Confirm `upd_es64_snmp_info_change_snmpLinkStat` and its libutility TRACE
-  do not pull lanalive-BSS-zero globals when linked into ncland. If they do,
-  fall back to c-tree-only writeback from ncland.
-- Endpoint / topic-prefix helpers from seed's existing PUB — verify they can
-  be shared between seed pass and watch loop (single PUB socket or two).
+## Resolutions (2026-08-13)
+
+### Enabled-field authority — RESOLVED: PG is authoritative
+
+- Definition: `ne_link_data.enabled` (boolean) —
+  `cnc/rdb/upgrade/54.1.08.sql:118`, "TRUE when the link is enabled
+  (frame_link disable bit, inverted)".
+- Sync path: PG → c-tree via `es64_snmp_info_from_rdb`
+  (`cnc/utility/src/alcatel_es64_db.c:7979`,
+  `rec_ptr->enabled = ld->enabled ? 1 : 0`). c-tree copy is derived.
+- Trigger: `trigger_frmlnk_link_data_{ins_del,upd}_ne_link_data`
+  (`cnc/rdb/upgrade/54.1.11.sql:144-155`) emits
+  `channel_frmlnk_link_data_change` on ANY `ne_link_data` change including
+  `enabled`. Watcher wakes on real state flips.
+- Existing gate: `cnc/sdi/src/clan.c:1489` reads
+  `es64_snmp_info.enabled` (c-tree) via `get_es64_snmp_info_neId_slot`.
+
+**Decision**: watcher fresh-reads PG `ne_link_data` for `enabled/ip/port`
+using existing `rdb_otn_port_ne_link_data.*` helpers. Reason: NOTIFY fires
+on PG COMMIT; the c-tree sync is a separate write and may lag the notify —
+a c-tree fresh-read at watcher-wake could race and miss the diff. PG read
+is authoritative and cannot race with its own trigger. ncland already
+links `-lrdb -lpq`, so no new deps for the watcher inside `cnc/ncland/src`.
+
+Cache still keyed `{neId, slot}` as designed; entries store the PG-read
+values.
+
+### TRACE / lanalive risk — RESOLVED: safe, no fallback needed
+
+Function body at `cnc/utility/src/alcatel_es64_db.c:6959`. Three callees:
+
+| Callee | Where | Touches lanalive globals? |
+|---|---|---|
+| `incGetRecord` / `incReWriteRecord` (c-tree) | same file | no |
+| `rdb_ne_link_status_upd_link_status` | `cnc/rdb/src/rdb_otn_port_ne_link_status.c:409` | no |
+| `set_slot_link_status` | `cnc/utility/src/alcatel_es64_db.c:11304` | no |
+
+`TRACE` here is `include/trace.h:92` → `trace3()`
+(`cnc/utility/src/trace.c:340`), the plain utility TRACE — NOT the lanalive
+one flagged in project memory `ncland_lanalive_globals_unsafe`. No
+reference to `AlrmMsqid`, `Dacsid`, `OnBEP`, `scrnq_overflow`,
+`write_alarm`, `send_msg_to_scrnq` anywhere in the reachable call graph.
+
+Link check (`cnc/ncland/src/Makefile`): ncland already links `libutillib`
+(owns `upd_es64_snmp_info_change_snmpLinkStat` and `set_slot_link_status`)
+and `librdb` (owns `rdb_ne_link_status_upd_link_status`). Calling the
+top-level helper from ncland dispatch adds zero new libs.
+
+**Decision**: full-fat writeback path (c-tree + PG + frame_link) via
+`upd_es64_snmp_info_change_snmpLinkStat`. Drop the "c-tree-only fallback"
+alternative from the plan.
+
+### PUB helper sharing — RESOLVED, but the doc's PUB model was wrong
+
+Correction: `nclan_seed` does NOT open a ZMQ PUB socket. It uses
+`nfdb_clientlib` to send `PUBLISH <topic> <yaml>` commands over a REQ
+socket to niimxd; niimxd's XPUB (`cnc/niimx/src/niimxd.cpp:867`, bound to
+`ipc:///usr/cnc/data/nfdb_pub.sock`, `ENDPOINT_PUB_DEFAULT` in
+`cnc/niimx/src/nfdb_proto.h:3`) is what actually emits on the bus.
+
+- REQ endpoint (client side): `ipc:///usr/cnc/data/nfdb.sock` (default,
+  overridable via `-e`).
+- Emit helper: `nfdb_command(conn, "PUBLISH %s \"%s\"", topic, body)` —
+  called at `cnc/ncland/src/nclan_seed.cpp:195` for the seed pass.
+- Server-side emit: `nfdb_event_publish()`
+  (`cnc/niimx/src/nfdb_cmd.cpp:1213`), driven by `cmd_publish()`
+  (`nfdb_cmd.cpp:2514`) after parsing the `PUBLISH` command.
+- No slow-joiner sleep in `nclan_seed`. Not needed because the client
+  doesn't own the PUB socket; niimxd's XPUB persists.
+
+**Decision**: `--watch` mode keeps the same REQ→`nfdb_command` connection
+open for the lifetime of the process, reusing it for seed pass + watch
+loop emits. No second socket. Amendments below where the doc previously
+implied a client-side PUB.
+
+CLI parsing: `getopt(argc, argv, "e:nh")` at `nclan_seed.cpp:110`. Add
+`w` → new string `"e:nhw"`; do NOT switch to `getopt_long`.
+
+### Doc amendments implied by the above
+
+- Architecture ASCII (line ~69): the "PUB: connect
+  `ipc:///usr/cnc/data/nfdb_sub.sock`" arrow is inaccurate. Watcher
+  publishes via REQ to `ipc:///usr/cnc/data/nfdb.sock`; niimxd's XPUB
+  handles egress to `nfdb_pub.sock`.
+- Components → nclan_seed (extended): drop mention of a PUB socket in the
+  watcher; just add SUB socket + reuse `nfdb_command("PUBLISH …")`.
+- Data flow → Boot step 4: drop "Open PUB socket; connect to
+  nfdb_sub.sock". Replace with "reuse the REQ conn opened for seed pass".
+- Error handling → Watcher: `zmq_send` EAGAIN on PUB HWM is now
+  `nfdb_command` returning non-zero (REQ-side backpressure or niimxd
+  error); same drop-and-log policy.
+- Fresh read: "reads the fresh row(s)" now means PG read via
+  `rdb_otn_port_ne_link_data`, not `get_es64_snmp_info_neId_slot`.
+- Testing: cache prime seeds from PG, not c-tree.
 
 ## Out of scope (deferred)
 - SIGHUP cache rebuild.
