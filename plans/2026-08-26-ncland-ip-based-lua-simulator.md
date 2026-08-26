@@ -607,16 +607,75 @@ git commit -m "ncland: add ncland_sim_connect (fork .clansim on PTY via inc_subp
 ## Task 5: Wire dispatch + teardown reap
 
 **Files:**
+- Modify: `cnc/ncland/src/ncland_sim.cpp` (`ncland_sim_disconnect` — gate on `c->sim`)
+- Modify: `cnc/ncland/src/ncland_sim_tests.cpp` (add guard test S11)
 - Modify: `cnc/ncland/src/ncland_warehouse.cpp` (`warehouse_connect_cb` line 124; `warehouse_carrier_free` line 162)
 - Modify: `cnc/ncland/src/ncland_conn.cpp` (`conn_free` line 82; add include)
 
-No new unit test — this is glue over already-tested units (`ncland_sim_connect`,
-`ncland_sim_disconnect`) and the pool/teardown paths that existing warehouse tests
-cover. Correctness is verified by the Task 6 build + the manual integration
-checklist. (`warehouse_connect_cb` is `static`, so it cannot be called from the
-test TU anyway.)
+> **Teardown-ordering hazard (fixed here — read first).** `ncland_ssh_disconnect`
+> sets `c->net_fd = -1` **unconditionally** (libssh owns the ssh fd, so it does
+> not `close()`), and `ncland_telnet_disconnect` only closes when `net_fd >= 0`.
+> So if `ncland_sim_disconnect` runs *after* the ssh/telnet disconnects, `net_fd`
+> is already `-1` and the **PTY master fd leaks** on every sim teardown.
+> Conversely, the current `ncland_sim_disconnect` closes `net_fd` whenever it is
+> `>= 0` — so calling it *first* on an **ssh** conn would `close()` the
+> libssh-owned fd (double-close / use-after-free). The fix is BOTH: (a) make
+> `ncland_sim_disconnect` a strict no-op on non-sim conns by gating on `c->sim`,
+> and (b) call it **before** the ssh/telnet disconnects. Steps 1-2 do (a) + a
+> guard test; Steps 4-5 do (b).
 
-- [ ] **Step 1: Add the include to warehouse**
+- [ ] **Step 1: Gate `ncland_sim_disconnect` on `c->sim`**
+
+In `ncland_sim.cpp`, change the guard at the top of `ncland_sim_disconnect` so it
+returns immediately for any non-sim conn (this makes it safe to call first, and a
+true no-op for ssh/telnet slots whose `net_fd` it must never touch). Replace:
+
+```cpp
+    if (!c)
+        return;
+```
+with:
+```cpp
+    /* Only ever act on sim conns. For ssh/telnet slots net_fd is owned by the
+     * transport layer (libssh does not close it; telnet closes it itself), so a
+     * non-sim conn must be left entirely untouched — see the teardown-ordering
+     * note in Task 5. */
+    if (!c || !c->sim)
+        return;
+```
+
+The reap (`if (c->sim_pid > 0)`) and the `close(net_fd)` that follow are unchanged
+— for a real sim conn `c->sim == 1`, so both still run.
+
+- [ ] **Step 2: Add guard test S11 (non-sim conn is untouched)**
+
+Append to `cnc/ncland/src/ncland_sim_tests.cpp`:
+
+```cpp
+TEST("sim", "S11 disconnect leaves a non-sim conn's fd untouched") {
+    /* A telnet/ssh slot (sim == 0) must not have its net_fd closed by the sim
+     * reaper — that fd is owned by the transport layer. */
+    int pfd[2];
+    REQUIRE_EQ(pipe(pfd), 0);
+    conn_t c;
+    conn_init(&c, 3);
+    c.sim = 0;            /* NOT a sim conn */
+    c.net_fd = pfd[0];    /* a live fd the sim reaper must leave alone */
+
+    ncland_sim_disconnect(&c);
+
+    REQUIRE_EQ(c.net_fd, pfd[0]);            /* fd field untouched */
+    REQUIRE_NE(fcntl(pfd[0], F_GETFD), -1);  /* fd still open (no EBADF) */
+    close(pfd[0]);
+    close(pfd[1]);
+}
+```
+
+Note: existing S7 still passes — `conn_init` leaves `sim == 0`, so the call is a
+no-op and its assertions (`sim_pid == 0`, `net_fd == -1`) still hold. S8/S9 set
+`c.sim = 1`, so their reap path is unaffected.
+
+- [ ] **Step 3: Add the include to warehouse**
 
 In `ncland_warehouse.cpp`, with the other `#include "ncland_*.h"` lines near the
 top (after `#include "ncland_stepper.h"`), add:
@@ -625,7 +684,7 @@ top (after `#include "ncland_stepper.h"`), add:
 #include "ncland_sim.h"
 ```
 
-- [ ] **Step 2: Branch the connect dispatch**
+- [ ] **Step 4: Branch the connect dispatch**
 
 Replace the body of `warehouse_connect_cb` (line 124-129):
 
@@ -640,16 +699,18 @@ static int warehouse_connect_cb(void *user, void *item)
 }
 ```
 
-- [ ] **Step 3: Reap on carrier teardown**
+- [ ] **Step 5: Reap on carrier teardown (BEFORE ssh/telnet)**
 
-In `warehouse_carrier_free` (line 162), add the sim reap alongside the ssh/telnet
-disconnects. After `ncland_telnet_disconnect(c);` (line 166) add:
+In `warehouse_carrier_free` (line 162), add the sim reap **before** the ssh/telnet
+disconnects, so it still sees a valid `net_fd` to close (see the ordering note
+above). Immediately after the `if (!c) return;` guard and before
+`ncland_ssh_disconnect(c);` (line 165), add:
 
 ```cpp
     ncland_sim_disconnect(c);
 ```
 
-- [ ] **Step 4: Reap on slot teardown**
+- [ ] **Step 6: Reap on slot teardown (BEFORE ssh/telnet)**
 
 In `ncland_conn.cpp`, add the include near the top (after `#include "nflog.hpp"`):
 
@@ -657,18 +718,23 @@ In `ncland_conn.cpp`, add the include near the top (after `#include "nflog.hpp"`
 #include "ncland_sim.h"
 ```
 
-Then in `conn_free` (line 82), after `ncland_telnet_disconnect(c);` (line 87) add:
+Then in `conn_free` (line 82), add the sim reap **before** the existing disconnect
+calls — immediately before `ncland_ssh_disconnect(c);` (line 86):
 
 ```cpp
     ncland_sim_disconnect(c);
 ```
 
-- [ ] **Step 5: Commit**
+(Gated on `c->sim` from Step 1, this is a strict no-op for ssh/telnet slots, so
+the ordering is safe for every conn type.)
+
+- [ ] **Step 7: Commit**
 
 ```bash
 cd /home/dan/Git/support-netflex
-git add cnc/ncland/src/ncland_warehouse.cpp cnc/ncland/src/ncland_conn.cpp
-git commit -m "ncland: dispatch sim connect in connect_cb; reap .clansim child on teardown"
+git add cnc/ncland/src/ncland_sim.cpp cnc/ncland/src/ncland_sim_tests.cpp \
+        cnc/ncland/src/ncland_warehouse.cpp cnc/ncland/src/ncland_conn.cpp
+git commit -m "ncland: dispatch sim connect in connect_cb; reap .clansim child first on teardown"
 ```
 
 ---
