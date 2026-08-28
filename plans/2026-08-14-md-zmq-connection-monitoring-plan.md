@@ -35,7 +35,7 @@ Eight files under `cnc/md/src`, no new files. Shared helper `l_md_sock.c` is **n
 
 **Recovery (up edge):** `TRACE(0, …)` + `MD_LOG(ProcName, MD_INFO, …)`.
 
-**Edge flag:** a file-scope `static int LinkDown = 0;` added near the other file-scope globals in each reader.
+**Edge flag:** a file-scope `static int ZmqLinkDown = 0;` added near the other file-scope globals in each reader. (NOT `LinkDown` — that name is an existing `EnumLinkStat` constant in `include/link_status.h`, which these files `#include`; using it would shadow/collide. All reader tasks use `ZmqLinkDown`.)
 
 ## Testing approach
 
