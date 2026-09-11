@@ -2905,6 +2905,9 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
  *
  *   USE_NIIMXD=1        Route all iimx traffic through niimxd instead of the
  *                       SysV message queue and per-command ssh. Off by default.
+ *                       Must be the integer 1 — this is an integer define, so
+ *                       "yes"/"true"/"on" all read as off. Any value that is not
+ *                       a positive integer leaves the legacy transport in place.
  *                       When on there is no fallback: if niimxd is unreachable
  *                       commands fail with "Service Unavailable".
  *   NIIMX.ENDPOINT=...  Override the niimxd ZMQ endpoint. Defaults to
