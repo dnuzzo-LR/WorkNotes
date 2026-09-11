@@ -30,6 +30,16 @@ simulator-name mapping, not a driver):
 | 187 | FUJITSU 1FINITY T300 | restclan |
 | 261 | CIENA O-NID | netclan + restclan |
 | 264 | CIENA WAVESERVER E-SERIES | netclan + restclan |
+| 173 | NOKIA 1850 TSS-15 | — (added 2026-09-11, see below) |
+
+**173 NOKIA 1850 TSS-15 was found late.** It appears in a dozen capability
+macros (`HAS_CLAN_CARD`, `HAS_SNMP_CARD`, `SUPPORTS_15MIN_PM`, ...) but never
+in clan.c, and none of the macros clan's dispatch actually tests contain it —
+so it too falls through to the `setupTSS5Connection` default. The attribution
+tool used to build this plan had guessed it shared the TSS-100 driver on the
+strength of the names; clan does not pair them. Anything else in this plan
+derived from that tool is worth re-checking against clan's dispatch before
+being ported, which is what the per-family checklist below is for.
 
 Customers want CLI where the equipment supports it, but there is no clan driver
 to port for these. They need new drivers written against the real NE CLI, which
