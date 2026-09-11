@@ -7,9 +7,9 @@ Tracking doc for bringing ncland to CLI parity with clan. Started 2026-09-11.
 | | count |
 |---|---|
 | dtypes with a clan card (`HAS_CLAN_CARD`) | 63 |
-| in the ncland registry | 28 |
-| remaining | 35, of which 6 are out of scope (below) |
-| portable target remaining | 29, across 16 families |
+| in the ncland registry | 41 |
+| remaining | 22, of which 6 are out of scope (below) |
+| portable target remaining | 16, across 12 families |
 
 Shipped so far: PR #7409 (Ciena Z Series 155, Cisco 4200 103, and four NE types
 that never loaded), then branch `ncland-more-ne-types` (203, 258, 172, then the
@@ -46,6 +46,11 @@ development against the equipment rather than as a port.
 
 | family | dtypes | branch |
 |---|---|---|
+| `setupSmartOpticsDCPConnection` | 72, 75, 88, 93 | `ncland-more-ne-types` |
+| `setupCiscoConnection` | 91, 153, 188, 249 | `ncland-more-ne-types` |
+| `setupInfineraGrooveConnection` | 87, 238, 251 | `ncland-more-ne-types` |
+| `setupCienaCESConnection` | 98, 148, 149 | `ncland-more-ne-types` |
+| `setupBTI78XXConnection` | 124, 125, 126 | `ncland-more-ne-types` |
 | `setupZSeriesConnection` | 155 | PR #7409 |
 | `setupIOSConnection` | 103, 228, then 70, 97, 217 | #7409 / `ncland-more-ne-types` |
 | `setupNew1830Connection` | 207, then 203, 258 | `ncland-more-ne-types` |
@@ -58,6 +63,25 @@ Already present before this effort: `setupCienaRLSConnection` (89),
 `setupPSI2TConnection` (156, 158, 215).
 
 ## Remaining families, largest first
+
+Recomputed 2026-09-11 after the Infinera / Ciena CES / BTI work:
+
+| clan driver | dtypes |
+|---|---|
+| `setupNCS1002Connection` | 138 NCS1001, 139 NCS1004, 250 NCS1002 |
+| `setupCoreDirectorConnection` | 240 Ciena 5410/5430, 242 Ciena CoreDirector |
+| `setupTSS100Connection` | 173 TSS-15, 174 TSS-100 |
+| `setup1678Connection` | 160 Nokia 1678 MCC |
+| `setupInfineraDtxItmConnection` | 96 Infinera XTM |
+| `setupLUConnection` | 122 Nokia 1675 LambdaUnite |
+| `setupMarvellTeralynxConnection` | 94 Marvell Teralynx |
+| `setupNT6500DWDMConnection` | 233 Ciena 6500 DWDM |
+| `setupNokiaWaveliteConnection` | 259 Nokia WaveLite |
+| `setupSymmetricom2700Connection` | 262 Symmetricom TimeProvider 2700 |
+| `setupTSS320Connection` | 185 Nokia 1850 TSS-320 |
+| `setupTSS3Connection` | 205 Nokia 1850 TSS-3 |
+
+### Original table (kept for reference)
 
 | clan driver | dtypes | NE types |
 |---|---:|---|
