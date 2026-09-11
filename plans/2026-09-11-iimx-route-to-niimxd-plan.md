@@ -1262,6 +1262,19 @@ plus the usage line:
         "  -R 0|1        Ask niimxd to spill the response to a file\n"
 ```
 
+While in this file, fix an unrelated hang found during Task 1 review: `niimx` sets
+`ZMQ_RCVTIMEO` but never `ZMQ_LINGER`, so after a receive timeout it prints its
+message and then blocks **forever** in `zmq_ctx_destroy` with the unsent request
+still queued on the DEALER. Verified with a live backtrace: 2m25s of blocking after
+a 3-second `-w`. Add, immediately after the socket is created:
+
+```cpp
+    int linger = 0;
+    zmq_setsockopt(sock, ZMQ_LINGER, &linger, sizeof(linger));
+```
+
+The harness works around this with `timeout 30`; this is the actual fix.
+
 Append to `cnc/niimx/src/test_niimx.sh`:
 
 ```bash
