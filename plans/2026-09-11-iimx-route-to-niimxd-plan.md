@@ -1053,6 +1053,79 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Task 4b: `niimx_recv` / `niimx_send` hardening
+
+Inserted after Task 3's code review. Every finding below produces **silently wrong
+data** rather than an error, and every later batch and pool task calls these two
+functions, so this lands before any divert does.
+
+**Files:** modify `include/niimxlib.h`, `cnc/utility/src/niimxlib.c`, `cnc/niimx/src/niimx_stub.cpp`, `cnc/niimx/src/niimx_t.cpp`, `cnc/niimx/src/test_niimx.sh`
+
+**1. Send-side stream corruption.** `niimx_send_frame` discards `zmq_msg_send`'s
+return. A send is 7 frames, 6 of them `ZMQ_SNDMORE`; libzmq does not flush until
+`more` is false, so a mid-message failure leaves an unflushed partial message with
+no API to abort it, and the next `niimx_send` appends to it. The daemon then reads
+one 10-frame message and parses every field shifted. Both sends returned 0.
+Reachable via `EINTR`: this tree dropped `SA_RESTART` on purpose, and a DEALER
+blocks rather than returning `EAGAIN` at the HWM.
+Fix: return the send result, `zmq_msg_close` on failure, and have `niimx_send`
+abandon the socket (`zmq_close(Sock); Sock = NULL;`) and return -1 — a half-sent
+multipart message cannot be rescued any other way.
+
+**2. Mid-reassembly timeout truncates the *next* caller.** Each segment is its own
+ZMQ message, so `ZMQ_RCVTIMEO` can expire at a segment boundary with segments
+*k..N* still queued. The current code frees `buf` and returns `NIIMX_TIMEDOUT`; the
+next caller absorbs the orphaned tail as a fresh reply and returns it with the
+*earlier* command's msgid. Fix: on timeout with `mcont > 0`, do not free and
+return — either keep waiting (the reply is committed and the daemon will finish it)
+or tear down the socket and return a distinct code saying other in-flight msgids
+are lost.
+
+**3. Framing errors desync the socket permanently.** On a short frame the function
+returns -1 leaving the rest of that message queued, shifting every subsequent read.
+Fix: on any framing error, drain to the end of the current ZMQ message using
+`ZMQ_RCVMORE`. Also check `RCVMORE` positively — 1 after each of the first three
+frames, 0 after the payload — so a daemon that changes its reply layout is caught
+instead of corrupting one command at a time.
+
+**4. Out-parameters untouched on failure.** `*rsp` / `*nbytes` are not set on any
+error return, so a caller with an uninitialized `char *rsp` frees garbage. The test
+driver already works around this, which is the tell. Set `*rsp = NULL; *nbytes = 0;`
+before any recv, and NULL-check the three pointers.
+
+**5. `msgid` constancy across segments.** Currently overwritten from every segment.
+Interleaving cannot happen today (`niimxd` is single-threaded epoll and emits a
+reply's segments in one uninterrupted loop), but a constancy check is the *detector*
+for findings 2 and 3 — after a mid-reassembly timeout the orphaned tail carries the
+old msgid. Three lines.
+
+**6. `tmout_ms` bounds each segment, not the call.** `ZMQ_RCVTIMEO` applies per
+`zmq_msg_recv`, and the loop makes one per segment. An 8 MB response is 328 segments
+at 25 KB, so `niimx_recv(..., 5000)` can sit for ~27 minutes. Track elapsed time and
+shrink the remaining budget each iteration — every later task builds command
+deadlines on this. Fix together with 2, which this makes more frequent.
+
+**7. Reassembly growth and cap.** `realloc(buf, bufsz + sz + 1)` grows a fixed 25 KB
+per segment — 328 reallocations for an 8 MB reply. Use a capacity/length pair that
+doubles. Add a `NIIMX_MAX_RSP` ceiling returning -1: today a daemon that never sends
+`mcont == 0` grows the buffer until the OOM killer fires, and with `tmout_ms <= 0`
+there is no escape at all. The cap also makes the `(int)bufsz` narrowing at the end
+provably safe.
+
+**Also fold in:** reset `niimx_next_msgid`'s static counter in the fork-detected
+branch of `niimx_sock()` (a forked child currently reuses its parent's IDs);
+correct `niimxlib.h`'s "Milliseconds to wait" wording per finding 6; and move the
+"Threading contract" `/** */` block, which is currently attached to no declaration
+and will bind to the following `extern "C"`.
+
+**Test additions.** The suite has no case exercising a mid-reassembly timeout — the
+`stale` test times out before *any* segment arrives, which is the aligned, safe
+case. Add stub pacing between segments plus a short receive timeout to cover
+finding 2 directly. Make `PIPELINE_OK` mean what it says by counting matched replies
+against `n`, so a reply matching nothing sent fails the test.
+
+---
+
 ### Task 5: `niimxlib` — the toggle itself
 
 **Files:**
