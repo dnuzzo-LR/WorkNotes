@@ -1275,6 +1275,15 @@ a 3-second `-w`. Add, immediately after the socket is created:
 
 The harness works around this with `timeout 30`; this is the actual fix.
 
+**Also tighten the stub back to strict in this task.** Task 3 had to make
+`niimx_stub.cpp` tolerate *both* frame layouts — branching on `more` after
+`s_tmout` — because `niimx.cpp` still sent 7 frames while the library already sent
+8. Once the `-R` change above lands, every client speaks the 8-frame layout, so the
+tolerance is dead weight that also blinds the stub to a genuinely missing `rspfile`
+frame. Replace the branch with a strict `recv_frame` for `s_rspfile` between
+`s_tmout` and `cmd`, and confirm the whole suite still passes — a hang on the first
+test means some client was missed.
+
 Append to `cnc/niimx/src/test_niimx.sh`:
 
 ```bash
