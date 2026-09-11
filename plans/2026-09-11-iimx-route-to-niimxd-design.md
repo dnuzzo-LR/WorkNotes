@@ -169,8 +169,18 @@ callers as a *successful* response body.
   toggle is on, rather than `/usr/cnc/data/iimx.congested`.
 - Unreachable daemon → `rc = -1`, `*rsp = "Service Unavailable"`. `zmq_connect` to an
   IPC endpoint succeeds lazily even with nothing bound, so liveness is established by
-  `access()` on the socket path plus a short `ZMQ_RCVTIMEO` on the first response —
-  never by waiting out the caller's `tmout`, which can be 600s. `niimx_avail()` strips
+  an `AF_UNIX` `connect()` probe on the socket path — never by waiting out the
+  caller's `tmout`, which can be 600s. Measured at 0.02s against a 600s deadline,
+  including the case that matters most: a socket file left behind by a SIGKILLed
+  daemon, where the original `access()` design would have reported the daemon up.
+
+  **Scope of the guarantee.** The probe runs before the send, so the fast failure
+  covers a daemon that is *already down when the command starts*, not one that dies
+  mid-command. Measured: killing the daemon one second into a command with a 6s
+  timeout returns at 6.02s, not immediately. This is inherent — ZMQ queues on the
+  DEALER, and without a heartbeat "the daemon died" is indistinguishable from "the
+  command is slow". Operators flipping the toggle should read the loud-failure
+  promise as being about startup state rather than liveness. `niimx_avail()` strips
   the `ipc://` scheme prefix before the `access()` call, and returns "available"
   without checking for any non-`ipc://` endpoint, since only IPC endpoints have a
   filesystem path.

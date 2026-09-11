@@ -1112,6 +1112,14 @@ doubles. Add a `NIIMX_MAX_RSP` ceiling returning -1: today a daemon that never s
 there is no escape at all. The cap also makes the `(int)bufsz` narrowing at the end
 provably safe.
 
+**8. `niimx_xact`'s stale-discard loop re-waits the full timeout per iteration.**
+Found during Task 4. Each pass hands `tmout * 1000` to `niimx_recv` afresh, so N
+stale replies arriving late in their windows give a worst case of `(N+1) * tmout`
+wall clock. Reachable: the DEALER is process-wide, the `stale` test already proves
+abandoned requests occur, and the pool paths make multiple outstanding requests
+normal. Compute a monotonic deadline once and give each `recv` only the remaining
+budget. Same defect family as finding 6; fix them together.
+
 **Also fold in:** reset `niimx_next_msgid`'s static counter in the fork-detected
 branch of `niimx_sock()` (a forked child currently reuses its parent's IDs);
 correct `niimxlib.h`'s "Milliseconds to wait" wording per finding 6; and move the
