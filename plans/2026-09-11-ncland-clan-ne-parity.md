@@ -32,8 +32,12 @@ simulator-name mapping, not a driver):
 
 Customers want CLI where the equipment supports it, but there is no clan driver
 to port for these. They need new drivers written against the real NE CLI, which
-means NE documentation or lab access — not derivable from the codebase. Treat
-as a separate work item, not part of the port.
+means NE documentation or lab access — not derivable from the codebase.
+
+**Decision 2026-09-11 (Dan): out of scope for now.** ncland is not losing
+anything clan has, because clan does not drive these over CLI either. Revisit
+only if a customer asks for CLI on one of them specifically, and then as new
+development against the equipment rather than as a port.
 
 **So the portable target is 33 dtypes across 17 families.**
 
