@@ -101,6 +101,24 @@ Per family, check rather than assume:
 Tests per family: registry load with zero skips, and the real Lua driven
 through its login over a socketpair.
 
+## Open question — revisit when the port is done
+
+**`IS_CISCO_ETH_MGMT` transport (dtypes 91, 153, 188, 249).** Unlike most NE
+types this family is NOT in `nclan_seed`'s `dtype_uses_es64` set, so nothing
+overrides the yaml at runtime — whatever `ne/cisco_ons_base.yaml` says is final.
+clan chooses ssh vs telnet from the global `SSHPath`, which ncland does not
+model at all. The port ships `protocol: [telnet, ssh]` because the login
+dialogue opens on a bare "Password:" with no user name, which is the telnet
+console shape.
+
+To settle (Dan flagged 2026-09-11):
+- how these NEs are actually reached in the field — telnet or ssh
+- whether ncland should grow an SSHPath-equivalent, or whether these dtypes
+  should join `dtype_uses_es64` so the es64 record supplies transport like it
+  does for every other family
+- the same question applies to any other family that turns out to be absent
+  from `dtype_uses_es64`; worth auditing the full set once the port is complete
+
 ## Known gaps carried forward
 
 - Real-NE credentials are never exercised by the simulators —
