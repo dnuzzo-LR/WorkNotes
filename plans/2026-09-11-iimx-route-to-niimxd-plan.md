@@ -1342,7 +1342,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 6: Build — link `libinc.so` against `libzmq`
 
-`libinc.so` is built by the stock `mklib` rule (`global.nmk:318`) with no `-lzmq`. `niimxlib.o` is already in `OBJ_INC` (`util.mk:395`) but nothing calls it, so its undefined `zmq_*` symbols sit harmlessly in the shared object. The moment `iimx_snd.c` calls in (Task 9), every one of the ~30 executables linking `-linc` would need `-lzmq` of its own. Fix it once, at the library.
+`libinc.so` is built by the stock `mklib` rule (`global.nmk:318`) with no `-lzmq`. `niimxlib.o` is already in `OBJ_INC` (`util.mk:395`) but nothing calls it, so its undefined `zmq_*` symbols sit harmlessly in the shared object. The failure this prevents is a **runtime** one, not a build break: `LDFLAGS` carries `-Wl,--allow-shlib-undefined`, so once `iimx_snd.c` calls in (Task 9) the ~30 executables linking `-linc` keep linking happily and then die on the first `zmq_*` call under lazy binding — `symbol lookup error` at the call site. Measured before the fix: `ldd -r 3b2/bin/clan` reports 13 undefined `zmq_*` symbols, and only 5 of the 17 `libinc` consumers in `3b2/bin` link `libzmq` themselves. Fix it once, at the library.
 
 This is **Lucent/AT&T nmake**, not GNU make: `.USE` defines a reusable action template, `$(<)` is the target, `$(*)` all prerequisites, `silent` suppresses echo and `ignore` suppresses exit status. Actions are tab-indented.
 
@@ -1406,7 +1406,11 @@ cd $BASE/cnc/rcmd/src && nmake ../../../3b2/bin/iisnd && echo CONSUMER_OK
 
 Expected: `CONSUMER_OK`, with no undefined-symbol errors.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Note the deploy consequence**
+
+The consumers carry no RPATH, so `ldd 3b2/bin/iisnd` resolves `libinc.so => /usr/cnc/lib/libinc.so` — the *installed* copy. The new `DT_NEEDED` reaches nothing running until `3b2/lib/libinc.so` is deployed there. Any runtime testing from Task 9 onward must account for this or it silently exercises the old library.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 cd $BASE
