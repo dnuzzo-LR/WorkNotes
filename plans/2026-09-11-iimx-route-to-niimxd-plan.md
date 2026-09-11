@@ -1781,6 +1781,39 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Notes carried into the divert tasks (9-18)
+
+Found while building the transport; they bear on the `iimx_snd.c` edits ahead.
+
+**`readInFile` is declared in no header anywhere in the tree.** `utillibinc.h`
+declares `readinfile` — lowercase, a different function. `iimx_snd.c` reaches
+`readInFile` by *implicit declaration*, which survives only because `util.mk`
+compiles with `-Wno-implicit`. Do not assume a prototype exists. It returns
+`st_size` (so 0, not -1, for an empty file), NUL-terminates, and leaks its buffer
+on a short read — the legacy caller does not free it.
+
+**`iimx_snd.c:616` has a latent prefix bug.** It passes `13` to `strncmp` against
+the 21-character literal `"/usr/cnc/tmp/iimx-rsp"`, so the effective test is
+`"/usr/cnc/tmp/"` — any path under that directory is treated as a spill response.
+`niimxlib` deliberately does not copy this; it compares the full prefix. Leave the
+legacy line alone unless a divert task has reason to touch it, but know it is there.
+
+**Gate spill handling on `rspfile` having been requested.** The legacy code tests
+the prefix unconditionally even though it has the flag in scope. Measured
+consequence: a command whose legitimate output is a path under `/usr/cnc/tmp/` has
+its output silently replaced by that file's contents and the file unlinked.
+
+**An oversized response destroys the socket.** `niimx_recv` returns `NIIMX_DESYNC`
+and drops the DEALER when a reply exceeds `NIIMX_MAX_RSP` mid-stream, so the caller
+loses every *other* in-flight request in that process, and both that and a dead
+daemon surface to `iimx_xact` callers as `"Service Unavailable"`. The pool and batch
+diverts issue many requests on one socket and are the ones exposed.
+
+**The library is single-threaded by construction.** One shared DEALER per process,
+and ZMQ sockets are not thread-safe. No divert may hand the socket to a thread.
+
+---
+
 ### Task 9: Divert `iimx_sendx_call`
 
 The single sync path, backing `iimx_sendx`, `iimx_send`, `iimx_check`, and `gbl_cgi` — the bulk of the ~271 call sites.
