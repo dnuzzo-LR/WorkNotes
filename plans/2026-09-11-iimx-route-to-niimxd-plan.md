@@ -1134,6 +1134,104 @@ against `n`, so a reply matching nothing sent fails the test.
 
 ---
 
+### Task 4c: close the remaining desync paths
+
+Inserted after the Task 4+4b combined review. Task 4b's own file states the
+invariant *"every error path leaves the socket either provably aligned or provably
+destroyed"* — two paths do not hold it, and one was reproduced returning **rc=0 with
+another command's response body**, which is worse than the fault 4b fixed because it
+reports success.
+
+**F1 (critical).** `misframed:` calls `niimx_drain_msg()`, which realigns the ZMQ
+*message* boundary but not the *reply* boundary. When the misframed segment is not
+the reply's last, segments *k+1..N* stay queued and the next `niimx_recv()` reads
+them as a fresh reply and returns 0. Reproduced against the stock `niimx_t` with a
+ROUTER answering a three-segment reply whose middle segment carries a 2-byte
+`mcont`: `BADFRAME_OK=0 rid_match=0 body=TAILTAILTAIL`.
+
+**F2 (critical).** `stalled:` with `rc == -1` neither drains nor drops.
+`niimx_recv_frame` returns -1 on a non-`EAGAIN` `zmq_msg_recv` failure — `EINTR` is
+reachable, since this tree drops `SA_RESTART` on purpose — and on a
+`zmq_getsockopt(ZMQ_RCVMORE)` failure, which happens *after* the frame is off the
+socket. Same consequence as F1.
+
+Fix both with one rule: **any framing error, and any non-timeout receive error after
+a frame has been consumed, drops the socket and returns `NIIMX_DESYNC`.** Note
+`seg > 0 || mcont > 0` is not sufficient — segment 0 can be misframed before `mcont`
+has been read, which is the reproduced case. Dropping costs one
+`zmq_socket`/`zmq_connect` on a path that should never fire.
+
+**F4.** `niimxlib.h` documents the size cap as returning -1, but -1 happens only when
+the oversized segment was the reply's last; crossing the cap mid-stream — the normal
+case — returns `NIIMX_DESYNC`, which the `NIIMX_DESYNC` doc block does not list as a
+cause. The behaviour is right, the documentation is backwards. Also: allocation
+failure shares that label, so OOM can report `DESYNC`; and `niimx_xact` collapses the
+whole class to `"Service Unavailable"`, making a too-large `RMTdump` indistinguishable
+from a dead daemon with nothing logged.
+
+**F7.** `NIIMX_MAX_SEGS = 1000000` only constrains *empty* segments (the byte cap
+already limits non-empty ones to 2621). At one empty segment per second with
+`tmout_ms <= 0` the loop runs eleven days. 32768 bounds it in seconds and is still
+12x clear of any legitimate reply.
+
+**F9.** The msgid and mcont size checks are `< 4` where the commit claims layout
+changes are caught positively. A daemon widening msgid to 8 bytes is silently
+accepted with the low 4 taken. One character each.
+
+**F6.** Nothing logs a teardown. For a library in ~30 executables whose worst outcome
+is "every in-flight command silently vanished", one trace line in
+`niimx_sock_drop()` repays itself the first time this happens in the field. Also:
+`niimx_send` describes an identical teardown in prose but returns plain -1, so a
+caller reading only `@return` lines will not connect the two vocabularies.
+
+**Also fold in:** `tmout_ms <= 0` is documented as "blocks indefinitely" but frames
+2-4 are bounded by `NIIMX_INTRA_MS`; state the wire format is host-endian and
+same-host only, since `niimx_avail()` tolerates `tcp://`; and add a note on
+`niimx_sock_drop` recording that it is only ever called downstream of a
+`niimx_sock()` in the same invocation, which is what makes the stale `SockPid` safe.
+
+**Test additions.** The `overflowed` path has zero coverage on both branches — the
+stub's `BIG_MAX_BYTES` is 8 MB against a 64 MB cap, so the branch with the subtlest
+contract is never executed. Defect 1's send-side fix has no committed test (it was
+proved with an `LD_PRELOAD` EINTR shim not in the tree; check it in). And nothing
+covers a framing or receive error on a *middle* segment, which is F1 and F2 exactly.
+
+---
+
+### Task 7b: niimxd hardening for client teardown
+
+Raised by the Task 4+4b review. Not introduced by the client work, but the client
+work turns it from rare into something the normal path provokes, so it must land
+before the toggle goes live.
+
+`niimxd` sets `ZMQ_ROUTER_MANDATORY=1` (`niimxd.cpp:825`) and nothing else — `SNDHWM`
+stays at the default 1000, `SNDTIMEO` at -1. `niimx_zmq_send_response()` sends
+blocking and **discards every `zmq_msg_send` return** (`niimxd.cpp:1220`, a `void`
+lambda), then unconditionally traces success at `:1231`. Consequences when a client
+tears its socket down mid-reply, which `niimxlib` now does deliberately:
+
+- Sends to the vanished identity return `EHOSTUNREACH` unnoticed. The ROUTER resets
+  its `more_out` state when it rejects an identity frame, so the next frame pushed
+  (the empty delimiter) is reinterpreted as an identity, then the 4-byte msgid as an
+  identity, and so on — the daemon silently burns the rest of that segment and leaks
+  a `zmq_msg_t` per frame.
+- In the disconnect race, or against any peer genuinely at its 1000-frame `SNDHWM`
+  (~200 segments, about 5 MB at the 25 KB `SEG_SZ`), the blocking send parks the
+  **single-threaded epoll loop for every other client**, with no timeout.
+
+Check the send return, close the message on failure, abandon the rest of that reply
+rather than pushing its remaining frames, and set a bounded `SNDTIMEO`. Verified as
+*not* a problem and needing no work: channel slots are freed unconditionally after
+the send (`niimxd.cpp:1998-2005` and four sibling sites), so no slot leak, and the
+niimx ROUTER keeps no per-identity map, so identity churn is harmless there.
+
+**Test.** The stub deliberately does not set `ROUTER_MANDATORY`, so it drops replies
+to a vanished client cleanly and models none of this. Add a second stub mode with
+MANDATORY set, or extend the existing comment to say what is deliberately not
+modelled.
+
+---
+
 ### Task 5: `niimxlib` — the toggle itself
 
 **Files:**
