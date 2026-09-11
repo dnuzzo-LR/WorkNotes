@@ -7,8 +7,9 @@ Tracking doc for bringing ncland to CLI parity with clan. Started 2026-09-11.
 | | count |
 |---|---|
 | dtypes with a clan card (`HAS_CLAN_CARD`) | 63 |
-| in the ncland registry | 24 |
-| remaining | 39, across 18 driver families |
+| in the ncland registry | 28 |
+| remaining | 35, of which 6 are out of scope (below) |
+| portable target remaining | 29, across 16 families |
 
 Shipped so far: PR #7409 (Ciena Z Series 155, Cisco 4200 103, and four NE types
 that never loaded), then branch `ncland-more-ne-types` (203, 258, 172, then the
@@ -40,6 +41,21 @@ only if a customer asks for CLI on one of them specifically, and then as new
 development against the equipment rather than as a port.
 
 **So the portable target is 33 dtypes across 17 families.**
+
+## Done
+
+| family | dtypes | branch |
+|---|---|---|
+| `setupZSeriesConnection` | 155 | PR #7409 |
+| `setupIOSConnection` | 103, 228, then 70, 97, 217 | #7409 / `ncland-more-ne-types` |
+| `setupNew1830Connection` | 207, then 203, 258 | `ncland-more-ne-types` |
+| `setupTSS5Connection` | 171, then 172 | `ncland-more-ne-types` |
+| `setupSmartOpticsDCPConnection` | 72, 75, 88, 93 | `ncland-more-ne-types` |
+
+Already present before this effort: `setupCienaRLSConnection` (89),
+`setupWaveServerConnection` (252-254), `setupFuji1FinityConnection` (119-121),
+`setupAdvaXG400Connection` (101, 137), `setupNokiaFxConnection` (104),
+`setupPSI2TConnection` (156, 158, 215).
 
 ## Remaining families, largest first
 
@@ -94,3 +110,14 @@ through its login over a socketpair.
   a deliberate call, documented in `ne/nokia_psi_l.yaml`.
 - Juniper's `display xml` / rpc-reply handling (`clanCheckXmlRpcReply`) has no
   ncland equivalent.
+- **Prompt capture takes the last line of the expect span**, which includes
+  whatever the previous expect left on that line (the space after
+  "Password:", say). For NEs whose prompt pattern admits spaces that residue
+  gets baked into the rebuilt regex. Fixed in `smartoptics_dcp.lua` by
+  trimming; `ciena_rls.lua` and `nokia_1830_pss.lua` use the same idiom with
+  equally space-tolerant patterns and are still exposed. The real fix is
+  GAPS.md Gap 2 -- an accessor for the matched text alone.
+- **clan's prompt rebuilds paste the live prompt in unescaped.** Confirmed
+  broken for SmartOptics, whose prompts contain brackets; the port escapes.
+  Worth checking the other `adapt_from_actual` NEs against their real prompt
+  shapes.
