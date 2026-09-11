@@ -880,6 +880,28 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Modify: `cnc/niimx/src/niimx_t.cpp`
 - Modify: `cnc/niimx/src/test_niimx.sh`
 
+- [ ] **Step 0: Close the vacuous-pass hole in the harness**
+
+Found during Task 3 review, and it undermines every assertion in the suite.
+`niimx` prints `Sent: <command>` to its own stdout (`niimx.cpp`, guarded only by
+`-q`, which also suppresses the reply body and so cannot be used). `assert_contains`
+greps the combined output, so a needle that appears in the *command* matches the
+client's echo rather than the server's reply. Demonstrated: with a deliberately
+broken stub that dropped every request, `assert_contains "stub echoes" "hello"`
+against `-c 'echo:hello'` still passed, matching `Sent: echo:hello`.
+
+In `assert_contains`, filter the client's echo out of the captured output before
+grepping:
+
+```bash
+out=$(timeout 30 "$@" 2>&1 | grep -v '^Sent: ')
+```
+
+Keep the `timeout` handling intact — note that piping changes `$?`, so capture the
+timeout status via `PIPESTATUS` or restructure to filter after the status check.
+Then re-run the suite and confirm it is still green; a test that now fails was
+passing vacuously and its needle needs fixing, not the filter.
+
 - [ ] **Step 1: Write the failing test**
 
 Add to `cnc/niimx/src/niimx_t.cpp`:
