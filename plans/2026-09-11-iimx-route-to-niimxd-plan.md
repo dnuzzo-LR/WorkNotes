@@ -1232,6 +1232,54 @@ modelled.
 
 ---
 
+### Task 4d: send-side symmetry and the uncovered `part` condition
+
+Small, and the last item on `niimxlib.c`. Raised by the verification review that
+confirmed the receive side converged.
+
+**1. `niimx_send()` reasons the opposite way to `niimx_recv()`.** The seven-way
+short-circuit drops the socket on *any* frame failure, including frame 1 (the empty
+delimiter). But libzmq commits a multipart message frame-by-frame — `lb_t::sendpipe()`
+sets `_more` only on the success path — so a frame-1 failure leaves `_more_out` false
+and the socket on a message boundary with **nothing committed**.
+`zmq_msg_init_size(&m, 0)` cannot fail (VSM), so the reachable failure is
+`zmq_msg_send` returning `EINTR`: the same signal, on the same blocking wait, that
+Task 4c's accepted pushback was built around. Its own commit message says *"a failure
+that cost nothing still returns its own rc with the socket intact"* — true on the
+receive path, false on the send path. On a DEALER at its high-water mark with a pool
+caller pipelining, that is the realistic shape.
+
+This does not violate the invariant (over-destroying is safe), so it is consistency,
+not correctness. Fix: send the delimiter separately and `return -1` without the drop.
+The suite mirrors the gap — `NIIMX_FAIL_SEND_NTH=3` is covered, `NTH=1` is not.
+
+**2. No test discriminates the `part` half of Task 4c's condition.**
+`NIIMX_FAIL_RECV_NTH=7` lands where `part == 1` *and* `seg == 1`, so the assertion
+would still pass if `got`/`part` were deleted and the line read `if (0 == seg)`. The
+fifth out-parameter — the whole substance of the pushback — has no coverage.
+`NIIMX_FAIL_RECV_NTH=2` (msgid frame of segment 0: `part == 1`, `seg == 0`) does
+discriminate: with `part` it is `rc=-3` and a clean follow-up; without it, `rc=-1`
+with segment 0 half-read and the next receive landing in `misframed`. One
+`assert_contains` in the existing block.
+
+Skip the `got == 1 && rc == -1` path (RCVMORE failing after consume) — the
+interposer wraps only `zmq_msg_send`/`zmq_msg_recv`, it would need a `zmq_getsockopt`
+wrapper, and it is unreachable in production.
+
+**3. Nits while in the file.** The comment says "2621 segments of 25 KB"; it is 2622
+(`67108864 / 25600 = 2621.44`, rounded up). `niimxlib.h`'s `-1` enumeration names a
+bad argument and an oversized last segment but not the headline new case — a receive
+failure that consumed nothing — which is the one a migrating caller most needs to
+recognise.
+
+**Carry into the divert tasks (9-18), not fixed here:** an oversized response with
+`mcont > 0` destroys the socket, so a caller requesting an `RMTdump` above
+`NIIMX_MAX_RSP` loses every *other* in-flight request in that process, and both that
+and a dead daemon surface as `"Service Unavailable"`. Correctly documented and
+traced, but it turns a per-command policy rejection into a transport event.
+
+---
+
 ### Task 5: `niimxlib` — the toggle itself
 
 **Files:**
