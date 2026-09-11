@@ -19,6 +19,11 @@ test "${VPATH%%:*}" = "$BASE" && echo VPATH_OK
 
 If either fails, stop and tell the user. Do not reconstruct the paths.
 
+**Naming nmake targets:** `nmake` expands `$(PBIN)` and `$(LDIR)` to the *relative*
+paths `../../../3b2/bin` and `../../../3b2/lib`, so a target must be named the same
+way. `nmake ../../../3b2/bin/niimx_t` works; `nmake $BASE/3b2/bin/niimx_t` fails with
+"don't know how to make". Use `$BASE` only for `cd` and for non-nmake commands.
+
 ---
 
 ## Background you need
@@ -222,7 +227,7 @@ Note nmake, not GNU make: `$(<)` is the target, `$(*)` all prerequisites. Action
 - [ ] **Step 3: Build it and verify it runs**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_stub
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_stub
 $BASE/3b2/bin/niimx_stub ipc:///tmp/t.ipc &
 sleep 1
 $BASE/3b2/bin/niimx -e ipc:///tmp/t.ipc -c 'echo:hello' -w 5 -x hello && echo STUB_OK
@@ -375,7 +380,7 @@ assert_contains "endpoint honours NIIMX.ENDPOINT sysdef" "ENDPOINT=$ENDPOINT" \
 - [ ] **Step 2: Run it to verify it fails**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t
 ```
 
 Expected: FAIL — `fatal error: niimxlib.h: No such file or directory`.
@@ -525,8 +530,8 @@ The old `niimx()` function is removed. It had no callers anywhere in the tree �
 - [ ] **Step 5: Build and run the test**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 2 passed, 0 failed`.
@@ -674,7 +679,7 @@ stop_stub
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t
 ```
 
 Expected: FAIL — `niimx_next_msgid` / `niimx_send` / `niimx_recv` were not declared.
@@ -845,8 +850,8 @@ A note on the segment loop: once the first frame of a multi-segment response has
 - [ ] **Step 5: Build and run the tests**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 6 passed, 0 failed`.
@@ -921,7 +926,7 @@ The last case also asserts speed implicitly: with `tmout` 600 it must still retu
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t
 ```
 
 Expected: FAIL — `niimx_xact` was not declared.
@@ -1008,8 +1013,8 @@ int niimx_xact(const char *host, const char *cmd, int rspfile,
 - [ ] **Step 5: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 9 passed, 0 failed`.
@@ -1068,7 +1073,7 @@ The env override exists only so the harness can flip the toggle without writing 
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t
 ```
 
 Expected: FAIL — `niimx_enabled` was not declared.
@@ -1116,8 +1121,8 @@ int niimx_enabled(void)
 - [ ] **Step 5: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 11 passed, 0 failed`.
@@ -1146,7 +1151,7 @@ This is **Lucent/AT&T nmake**, not GNU make: `.USE` defines a reusable action te
 - [ ] **Step 1: Write the failing test**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
 ldd $BASE/3b2/lib/libinc.so | grep -q libzmq && echo ZMQ_LINKED || echo ZMQ_MISSING
 ```
 
@@ -1184,7 +1189,7 @@ Leave every other `mklib` user in the file alone.
 - [ ] **Step 3: Rebuild and verify**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
 ldd $BASE/3b2/lib/libinc.so | grep -q libzmq && echo ZMQ_LINKED || echo ZMQ_MISSING
 ```
 
@@ -1195,7 +1200,7 @@ Expected: `ZMQ_LINKED`.
 Pick a binary that links `-linc` and rebuild it:
 
 ```bash
-cd $BASE/cnc/rcmd/src && nmake $BASE/3b2/bin/iisnd && echo CONSUMER_OK
+cd $BASE/cnc/rcmd/src && nmake ../../../3b2/bin/iisnd && echo CONSUMER_OK
 ```
 
 Expected: `CONSUMER_OK`, with no undefined-symbol errors.
@@ -1270,7 +1275,7 @@ stop_stub
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx && ./test_niimx.sh
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx && ./test_niimx.sh
 ```
 
 Expected: FAIL before the `-R` edit (`invalid option`); after the edit it passes only because the stub already reads the frame (added in Task 3, Step 5). Confirm the stub has `s_rspfile` in its recv chain before continuing.
@@ -1483,7 +1488,7 @@ with:
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
 cd $BASE/cnc/niimx/src && nmake && ./test_niimx.sh
 ```
 
@@ -1552,7 +1557,7 @@ stop_stub
 - [ ] **Step 2: Run to verify it fails**
 
 ```bash
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: FAIL — with no `imsgx` running, `iimx_sendx` times out or returns a message-queue error, not `body=hi`.
@@ -1605,8 +1610,8 @@ Two things to notice. The `local` test is lifted out of the original `if` so bot
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 15 passed, 0 failed`.
@@ -1715,8 +1720,8 @@ Place it after the existing `gethostname(me,sizeof(me)-1);` so `me` is populated
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 17 passed, 0 failed`.
@@ -1881,8 +1886,8 @@ Move the declarations of `now` and `start` above this block if the compiler comp
 - [ ] **Step 5: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 19 passed, 0 failed`.
@@ -2020,8 +2025,8 @@ The `nbytes + 1` matches the legacy path at `:2650`, which appends the terminati
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 20 passed, 0 failed`.
@@ -2165,8 +2170,8 @@ The `NIIMX^` branch mirrors the legacy `FAIL:Service Unavail` handling at `:3145
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 21 passed, 0 failed`.
@@ -2318,8 +2323,8 @@ Expected: FAIL — empty body.
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 22 passed, 0 failed`.
@@ -2415,7 +2420,7 @@ int iimx_sendx_remote(char *host,char *cmd,char **rsp,int tmout)
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
 cd $BASE/cnc/niimx/src && nmake && ./test_niimx.sh
 ```
 
@@ -2564,8 +2569,8 @@ The `rhost` precedence — per-entry host first, then the function-wide `host`, 
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 25 passed, 0 failed`.
@@ -2666,8 +2671,8 @@ int iimx_sendx_batch_wk(char *host,int ncmd,struct iimx_ri *ri,int (cb)(char *),
 - [ ] **Step 4: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
-cd $BASE/cnc/niimx/src && nmake $BASE/3b2/bin/niimx_t && ./test_niimx.sh
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
+cd $BASE/cnc/niimx/src && nmake ../../../3b2/bin/niimx_t && ./test_niimx.sh
 ```
 
 Expected: `Results: 26 passed, 0 failed`.
@@ -2741,7 +2746,7 @@ The batch entry points do not go through `niimx_xact`. Add the same guard at the
 - [ ] **Step 5: Build and run**
 
 ```bash
-cd $BASE/cnc/utility/src && nmake -f util.mk $BASE/3b2/lib/libinc.so
+cd $BASE/cnc/utility/src && nmake -f util.mk ../../../3b2/lib/libinc.so
 cd $BASE/cnc/niimx/src && nmake && ./test_niimx.sh
 ```
 
