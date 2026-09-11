@@ -116,10 +116,16 @@ at the top:
 | `iimx_sendx_pool_v2` | 2700 | pipelined send-N / recv-N |
 | `iimx_sendx_remote` | 69 | `niimx_xact` with `host` frame; replaces `mcmd ssh` fork |
 | `iimx_sendx_batch_wk` | 1850 | `host` frame per entry; replaces `iimx_connect` port-80 socket |
-| `iimx_swarm` | 2168 | as above |
-| `iimx_multi_fp` | 1459 | as above |
 
-`remote_req` (`:281`) is untouched.
+Three functions need no divert of their own:
+
+- `iimx_multi_fp` (`:1459`) is a thin wrapper over `iimx_sendx_batch` (`:2680`),
+  which forwards to `iimx_sendx_batch_wk`. Covered.
+- `iimx_swarm` (`:2168`) spawns `/usr/cnc/bin/swarm` running `iisnd -c '<cmd>'`
+  (`:2199-2202`), and `iisnd` calls `iimx_sendx` (`cnc/rcmd/src/iisnd.c:342`). It
+  inherits the toggle transitively once `libinc.so` ships, locally and — via
+  `ssh <host> -- iisnd` — on the far end too.
+- `remote_req` (`:281`) is excluded by decision 2.
 
 ### 3. Protocol change
 
