@@ -1,5 +1,9 @@
 # ncland: porting the remaining clan NE types
 
+> **COMPLETE 2026-09-11.** Every dtype clan actually drives over the CLI is in
+> the ncland registry: 56 of 63, with the other 7 having no clan driver at all.
+> Branch `ncland-more-ne-types`, stacked on PR #7409.
+
 Tracking doc for bringing ncland to CLI parity with clan. Started 2026-09-11.
 
 ## Where things stand
@@ -7,9 +11,9 @@ Tracking doc for bringing ncland to CLI parity with clan. Started 2026-09-11.
 | | count |
 |---|---|
 | dtypes with a clan card (`HAS_CLAN_CARD`) | 63 |
-| in the ncland registry | 41 |
-| remaining | 22, of which 6 are out of scope (below) |
-| portable target remaining | 16, across 12 families |
+| in the ncland registry | **56** |
+| remaining | **0** |
+| out of scope (no clan driver) | 7 |
 
 Shipped so far: PR #7409 (Ciena Z Series 155, Cisco 4200 103, and four NE types
 that never loaded), then branch `ncland-more-ne-types` (203, 258, 172, then the
