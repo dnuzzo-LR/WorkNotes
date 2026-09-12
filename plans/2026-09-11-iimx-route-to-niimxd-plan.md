@@ -2527,6 +2527,45 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Task 14 is DROPPED — `iimx_sendx_pool_v2` is dead code
+
+Raised by Task 10, which noticed the plan enumerated entry points from reading
+`iimx_snd.c` rather than from a call-site census, then confirmed by census.
+
+`grep -rn "iimx_sendx_pool_v2" --include=*.c --include=*.cpp --include=*.h
+--include=*.mk` over the whole tree returns **nothing** outside its own definition.
+No callers, no header declaration, no makefile reference. Diverting it would cost a
+task and a set of assertions to harden a function that cannot be reached.
+
+Census of the remaining divert targets, external call sites excluding `iimx_snd.c`
+and the test driver:
+
+| target | sites | verdict |
+|---|---|---|
+| `iimx_q` / `iimx_poll` | 1 / 2 (`cnc/rcmd/src/ilua.c`) | live |
+| `iimx_local` | 1 real (`cnc/rcmd/src/powr_cat.c:336`; 3 other hits are doc comments) | live |
+| `iimx_sendx_pool` | 1 (`cnc/rcmd/src/powr_cat.c:3799`) | live |
+| `iimx_sendx_pool_v2` | 0 | **dead — dropped** |
+| `iimx_sendx_remote` | 4 | live |
+| `iimx_sendx_batch` -> `_batch_wk` | 9 via the wrapper | live |
+| `iimx_sendx_multi` | 2 | live |
+| `iimx_swarm` | 0 | already excluded (inherits via `iisnd`) |
+
+Note `iimx_sendxn` (Task 10, already committed) was also dead by this measure — zero
+callers and no prototype in any header, reachable only as an exported symbol of
+`libinc.so`. That work stands and is correct, but it is the reason this census
+happened.
+
+**Also found in the legacy `iimx_sendxn`, not fixed** (dead code, and the no-refactor
+rule applies): `snprintf(rsp,n-1,imsg.mtext); rsp[n]=0;` writes one byte past the
+caller's buffer on *every* success; `n == 0` gives an unbounded write; `imsg.mtext`
+is passed as the format string; and it overwrites rather than appends across `mcont`
+segments, so a segmented response arrives as its last segment only. If anything
+out-of-tree links `libinc` and calls this, it wants its own fix.
+
+
+---
+
 ### Task 14: Divert `iimx_sendx_pool_v2`
 
 Same shape as Task 13, but `struct iimx_pool_ri` has a fixed `char iob_buf[4096]` and a `char cmd[128]` instead of an `iob` and a pointer (`include/iimx_snd.h:53-64`).
