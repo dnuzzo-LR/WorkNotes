@@ -2719,6 +2719,40 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Task 15 is DROPPED — `iimx_sendx_remote` is a shell-exec helper, not an iimx channel
+
+Found while re-running the call-site census after Task 13 revealed `iimx_sendx_pool`
+was dead. Despite its name and its home in `iimx_snd.c`, this function runs
+`mcmd ssh <host> '<cmd>'`, and its three live callers pass **shell commands**:
+
+| caller | payload |
+|---|---|
+| `cnc/rcmd/src/checkfeps.c:286` | `/usr/cnc/bin/is_cnc_up` |
+| `cnc/rcmd/src/neport.c:212` | `/usr/cnc/ambin/neport <argv...>` |
+| `cnc/rcmd/src/netdiag.c:1307` | a command built for `muxhost` |
+
+(`cnc/rcmd/src/nelock.c:358` is commented out.)
+
+Diverting it would send those strings to `niimxd`, which hands commands to a
+bchannel's NE login session as TL1/RMT. That does not degrade — it breaks three live
+tools outright.
+
+The function has two distinct uses and only one is iimx traffic:
+
+1. **From `iimx_sendx_call`** for a non-local host, where the payload *is* an iimx
+   command. **Already covered** — Task 9 diverts to `niimx_xact(host, ...)` before
+   control ever reaches `iimx_sendx_remote`, so genuine remote iimx traffic already
+   travels in the `host` frame.
+2. **From the three external callers**, which is remote shell exec and must stay on
+   ssh.
+
+So the design's "the toggle covers remote too" is satisfied by Task 9 for the traffic
+it was meant to cover. The design doc's claim that this function carries iimx
+commands was inferred from its name and location rather than from its callers.
+
+
+---
+
 ### Task 15: Divert `iimx_sendx_remote`
 
 Today this forks `mcmd ssh` per command (`:74-76`). niimxd holds persistent libssh bchannels per remote host, so the fork disappears.
