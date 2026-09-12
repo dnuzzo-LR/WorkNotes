@@ -3142,6 +3142,41 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Behavioural differences the documentation must state (for Task 19)
+
+The toggle is meant to be invisible to callers. These are the places it is not.
+Each was a deliberate, reviewed decision; ops needs them written down.
+
+**1. `iimx_q` now sheds under congestion; it never did before.** It is the one iimx
+entry point with no legacy `access("/usr/cnc/data/iimx.congested")` check (the five
+legacy sites are `iimx_snd.c:482, 712, 2590, 2776, 3024`). Task 11 added the shed
+under the toggle, because leaving it out would make `iimx_q` the single route by
+which a shedding `niimxd` still gets fed. So with `niimx.congested` present, a
+toggle-on `iimx_q` batch fails where a toggle-off one would not.
+
+**2. Congestion is read from `niimx.congested`, not `iimx.congested`.** Different
+daemons, different flags. A box mid-migration can have one raised and not the other,
+and which one bites depends on the toggle.
+
+**3. `iimx_sendxn` truncation differs.** The legacy path truncates to `n-2` and then
+writes one byte past the caller's buffer; the diverted path truncates to `n-1` with
+the NUL inside the buffer. The function has no in-tree callers, but it is exported
+from `libinc.so`.
+
+**4. A too-large response is not distinguishable from a dead daemon.** Both surface
+as `"Service Unavailable"`. Under the toggle, exceeding `NIIMX_MAX_RSP` mid-stream
+also destroys the shared socket, so it costs every *other* in-flight request in that
+process.
+
+**5. Remote commands no longer fork ssh per command.** They travel in the `host`
+frame to the local `niimxd`, which owns the persistent session. Failure modes for an
+unreachable remote host therefore change shape — `niimxd` answers
+`"NIIMX^Unknown host"` for a host absent from its `remote_host_list`, where the
+legacy path produced whatever `ssh` said.
+
+
+---
+
 ### Task 19: Documentation and full-suite verification
 
 **Files:**
