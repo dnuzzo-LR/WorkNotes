@@ -1781,6 +1781,20 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### Follow-up, not scheduled: `G.nfdb_router` has unbounded sends
+
+Found during Task 7b and deliberately left alone — it is the *other* ROUTER, and
+`niimxlib` does not connect to it. `G.nfdb_router` (`niimxd.cpp` around `:856`) sets
+neither `ZMQ_ROUTER_MANDATORY` nor `ZMQ_SNDTIMEO`. It has no frame-reinterpretation
+problem, because without MANDATORY it drops to a vanished identity silently. But its
+sends are still unbounded at the high-water mark, so a peer that stops draining can
+park the same single-threaded epoll loop that Task 7b just protected on the niimx
+side. Its `nfdb_clients` map (around `:388`) is also unbounded on identity churn.
+
+Worth its own look; not part of this plan.
+
+---
+
 ### Notes carried into the divert tasks (9-18)
 
 Found while building the transport; they bear on the `iimx_snd.c` edits ahead.
