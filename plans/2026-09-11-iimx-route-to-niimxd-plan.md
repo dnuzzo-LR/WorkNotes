@@ -3168,7 +3168,16 @@ as `"Service Unavailable"`. Under the toggle, exceeding `NIIMX_MAX_RSP` mid-stre
 also destroys the shared socket, so it costs every *other* in-flight request in that
 process.
 
-**5. Remote commands no longer fork ssh per command.** They travel in the `host`
+**5. `iimx_local` leaves different `state` values on a failed batch.** Toggle-off
+leaves unanswered entries `IIMX_RACTIVE` (0); toggle-on marks them `IIMX_RERROR` /
+`IIMX_RTIMEDOUT` / `IIMX_RQERROR` as appropriate, matching what
+`iimx_sendx_batch_wk` already does for the same outcomes in the same file. `rc` and
+`b.buf` — the two things any caller actually consumes — are identical, and the five
+`state` readers in `powr_cat.c` are each preceded by `if (isNullStr(resp)) continue;`
+so an entry with no body never reaches the test. Invisible in practice, but not
+bit-identical.
+
+**6. Remote commands no longer fork ssh per command.** They travel in the `host`
 frame to the local `niimxd`, which owns the persistent session. Failure modes for an
 unreachable remote host therefore change shape — `niimxd` answers
 `"NIIMX^Unknown host"` for a host absent from its `remote_host_list`, where the
