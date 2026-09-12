@@ -114,7 +114,7 @@ at the top:
 | `iimx_local` | 2539 | pipelined send-N / recv-N |
 | `iimx_sendx_pool` | 2941 | pipelined send-N / recv-N |
 | `iimx_sendx_pool_v2` | 2700 | pipelined send-N / recv-N |
-| `iimx_sendx_remote` | 69 | `niimx_xact` with `host` frame; replaces `mcmd ssh` fork |
+| ~~`iimx_sendx_remote`~~ | 69 | **NOT diverted** (corrected 2026-09-11). It is a remote *shell exec* helper — `mcmd ssh host '<cmd>'` — and its three live callers pass shell commands, not iimx commands: `checkfeps.c:286` sends `/usr/cnc/bin/is_cnc_up`, `neport.c:212` sends `/usr/cnc/ambin/neport <argv>`, `netdiag.c:1307` sends a command for `muxhost`. Diverting would feed those to an NE login session. Genuine remote iimx traffic is already covered: the `iimx_sendx_call` divert routes a non-local host to `niimx_xact(host, ...)` before control reaches this function. |
 | `iimx_sendx_batch_wk` | 1850 | `host` frame per entry; replaces `iimx_connect` port-80 socket |
 
 Three functions need no divert of their own:
@@ -226,5 +226,10 @@ A/B harness running each case under `USE_NIIMXD=0` and `USE_NIIMXD=1` and diffin
 
 - `remote_req()` and its `/fcgi/<service>` transport.
 - `iimx_sendx_remote_old()` — dead code, left alone.
+- `iimx_sendx_remote()` itself — see the corrected row above; it stays on ssh.
+- `iimx_sendxn`, `iimx_sendx_pool`, `iimx_sendx_pool_v2` — all found to have no
+  reachable callers. `iimx_sendxn` and `iimx_sendx_pool` were diverted anyway (they
+  are exported from `libinc.so` and uniformity across the batch paths was judged
+  worth more than the saved effort); `iimx_sendx_pool_v2` was dropped.
 - Removing the msgq paths. The toggle defaults off and both transports stay in the
   binary.
