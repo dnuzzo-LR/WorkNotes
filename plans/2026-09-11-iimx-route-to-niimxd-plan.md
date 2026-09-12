@@ -1959,6 +1959,23 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+### ORDERING CHANGE: Task 18 (congestion) moves to here, before Tasks 10-17
+
+Found during Task 9. `NIIMX_CONGESTED_FILE` is declared in `niimxlib.h` and read by
+**nothing** — `grep -rn NIIMX_CONGESTED_FILE` over all `.c/.cpp/.h` returns only the
+`#define`. The legacy `access("/usr/cnc/data/iimx.congested")` pre-check sits below
+each divert, so with `USE_NIIMXD=1` iimx traffic is no longer shed under congestion
+at all. That is a live behavioural regression the moment the define is flipped.
+
+It was scheduled last, which is the wrong order: Tasks 12, 13, 14 and 16 each need
+the same guard inside their divert blocks. Doing it now means those are written with
+it rather than retrofitted, and closes the regression while only one divert exists.
+
+Run Task 18 next. The remaining diverts then include the guard as they are written.
+
+
+---
+
 ### Task 10: Divert `iimx_sendxn`
 
 Same single command, but the caller supplies a fixed buffer instead of receiving a `malloc`'d one.
