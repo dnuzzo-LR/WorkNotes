@@ -1,7 +1,8 @@
 # Web Upgrade Tool — Design
 
 **Date:** 2026-09-15
-**Status:** Design agreed through architecture and the `inc_upgrader` contract. Two inputs still open (see [Open Questions](#open-questions)). Not yet planned or implemented.
+**Status:** Design agreed through architecture and the `inc_upgrader` contract. One input still open (see [Open Questions](#open-questions)). Not yet planned or implemented.
+**Repository:** `nfupgrader`
 **Author:** Dan Nuzzo, with Claude
 
 ---
@@ -82,7 +83,7 @@ No `reboot`, `shutdown` or `init 6` anywhere in the script. `swibootinc` boots t
 |---|---|---|
 | 1 | True per-state stepping, gated inside `inc_upgrader` | Checks can attach to every state |
 | 2 | One resident gated process per host, not re-invocation per state | Preserves today's execution semantics exactly; no `RETROROOT` re-entry hazard; preamble runs once |
-| 3 | New repository, Python 3.6.8, stdlib only | No runtime dependencies on a customer box |
+| 3 | New repository `nfupgrader`, Python 3.6.8, stdlib only | No runtime dependencies on a customer box |
 | 4 | Vendor the check and multibox logic from `nf-install` | `InternalChecks` and `multibox_config.py` are the expensive parts to rebuild |
 | 5 | Coordinator model — one host drives the site | The multi-host dance is the actual customer pain |
 | 6 | Coordinator runs on a FEP | BEPs are the thin side of the site |
@@ -113,7 +114,7 @@ Two consequences, accepted knowingly:
 ```
 Customer desk                fep1 (coordinator)                  fep2 / bep1 / bep2
 ─────────────                ──────────────────                  ──────────────────
-browser                      /opt/nfupgrade                      gated inc_upgrader
+browser                      /opt/nfupgrader                      gated inc_upgrader
   │                            http.server on 127.0.0.1            (detached)
   └── ssh -L tunnel ──────►    site plan + progress              state file
                                audit log                         trace file
@@ -124,7 +125,7 @@ browser                      /opt/nfupgrade                      gated inc_upgra
                                                                read state / tail trace
 ```
 
-One Python service, on one FEP, installed under `/opt/nfupgrade` so the symlink flip cannot touch it. Peer hosts need only `sshd`.
+One Python service, on one FEP, installed under `/opt/nfupgrader` so the symlink flip cannot touch it. Peer hosts need only `sshd`.
 
 No long-lived ssh session. The coordinator ssh's once per host to launch that host's `inc_upgrader` detached, then every later interaction is a one-shot command. This matters: a resident gated process has to survive an entire stage phase, and an ssh channel held open for hours would not.
 
@@ -210,7 +211,7 @@ Backward-compatible without special handling: an old state file can only ever co
 
 ### Site plan
 
-`plan.json` under `/opt/nfupgrade/var` holds host order and per-host phase.
+`plan.json` under `/opt/nfupgrader/var` holds host order and per-host phase.
 
 **The plan is advisory; the boxes are authoritative.** On every poll and on every coordinator restart, per-host truth is re-derived from that host's state file, gated marker and pid liveness. The coordinator never displays its own memory of what a host was doing.
 
@@ -259,7 +260,7 @@ Fields handled: `INCLOGDIR`, `NEW_GENERIC`, `NEW_LOAD`, `DEPOTFILE`, `PATCHDEPOT
 
 ## Audit log
 
-Append-only JSONL under `/opt/nfupgrade/var`, with a human-readable rendering available in the UI.
+Append-only JSONL under `/opt/nfupgrader/var`, with a human-readable rendering available in the UI.
 
 Recorded: every login and token redemption, every step launch with its full argv, every go-token drop, every check result, every override with its reason, every abort, every config written, and every ssh command with target host and exit status.
 
@@ -309,13 +310,11 @@ Six subsystems. Each phase gets its own spec and plan.
 
 ## Open Questions
 
-Both are inputs Dan is confirming, not unresolved design.
+An input Dan is confirming, not unresolved design.
 
 1. **Host ordering.** For a multibox site: stage every host first and then upgrade every host, or take each host all the way through? Within a phase, BEPs before FEPs or the reverse? Dan is confirming this himself.
 
    The mechanism does not depend on the answer. Order is a data value in `plan.json`, and the tool proposes a default that the customer confirms on a review screen. Only the default value is pending.
-
-2. **Repository name.** Not chosen.
 
 ---
 
