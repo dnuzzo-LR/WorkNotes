@@ -1,9 +1,11 @@
 # Web Upgrade Tool — Design
 
 **Date:** 2026-09-15
-**Status:** Design agreed through architecture and the `inc_upgrader` contract. One input still open (see [Open Questions](#open-questions)). Not yet planned or implemented.
+**Status:** Design agreed through architecture and the `inc_upgrader` contract. No open inputs. Not yet planned or implemented.
 **Repository:** `nfupgrader`
 **Author:** Dan Nuzzo, with Claude
+
+**Revision 2026-09-16:** After review with customer support, scope narrowed to **upgrade the local host only**. The tool no longer coordinates or drives upgrades on other hosts. It still *displays* read-only status for every host in the site. This removed the coordinator, the remote gated process, the go-token-over-ssh transport, and the host-ordering question. ssh survives solely as a read-only channel for peer status. Sections below reflect this; the coordinator design is preserved only in the git history of this file.
 
 ---
 
@@ -11,18 +13,18 @@
 
 Upgrades are performed today with `3b2/shell/inc_upgrade` and `3b2/shell/inc_upgrader`. They work, but they are not something we want to hand to customers: a hand-written config file, a `ksh` invocation, a backgrounded process, and a log file to tail. The customer has asked to perform upgrades themselves.
 
-We want a web layer over those scripts that lets the customer step through the upgrade one state at a time, runs system checks between states, and shows the current state of the installation — version, GR, multibox, and the status of every host in the site.
+We want a web layer over those scripts that lets the customer step through the upgrade of **the host they are logged into** one state at a time, runs system checks between states, and shows the current state of the installation — version, GR, multibox, and the read-only status of every host in the site.
 
 ## Goals
 
-- Step through every upgrade state individually, so a check can be attached to each one.
+- Step through every upgrade state individually **on the local host**, so a check can be attached to each one.
 - Reuse the existing shell scripts as the engine. They are battle-tested; the web layer wraps them, it does not replace them.
 - Borrow the system-checking machinery from `nf-install`.
-- Show current installation facts: versions, GR status, multibox topology, per-host status.
-- Drive a whole multibox site from one place.
+- Show current installation facts: versions, GR status, multibox topology, and per-host status for the whole site — read-only for peers.
 
 ## Non-Goals
 
+- **Driving upgrades on any host other than the local one.** The customer runs the tool on each host they want to upgrade. Support asked for this narrowing explicitly.
 - Rewriting the upgrade logic in Python.
 - Replacing `nf-install`. This is a separate tool with a separate purpose.
 - Rollback. The existing scripts do not offer it and this project does not add it.
@@ -65,12 +67,12 @@ The `swsstart` arm (`:1028-1042`) runs `doswsstart`, `calc_stage_space` *and* `d
 
 No `reboot`, `shutdown` or `init 6` anywhere in the script. `swibootinc` boots the *application*. `stop_inc` (`:484`) calls `new_boot_nms remote_shutdown`. `linux_packages` does not restart services — its `httpd` lines are yum installs and its `systemctl` lines are commented out (`linux_packages:110,124-125,150-151,352`). `/opt` is untouched throughout.
 
-**Therefore a service installed under `/opt` survives the upgrade of its own host,** including the symlink flip and the application outage. This is what makes a coordinator on a site host viable.
+**Therefore a service installed under `/opt` survives the upgrade of its own host,** including the symlink flip and the application outage. This is what lets the tool run *on the very host it is upgrading* and keep serving its UI across the whole upgrade.
 
 ### Other relevant behaviour
 
 - `confirm_setup` blocks on an interactive `read` unless `PROMPTFORVALIDATE=NO`. The tool must always set it.
-- `inc_upgrade` already `nohup`s `inc_upgrader` and returns immediately — the detached-launch pattern the coordinator uses is the script's own.
+- `inc_upgrade` already `nohup`s `inc_upgrader` and returns immediately — the detached-launch pattern the tool uses locally is the script's own.
 - `check_gr_inprogress` (`:1476`) blocks *inside* the script for up to `MAX_ELAPSED_GR_WAIT_TIME` (default 4 hours) while `/usr/cnc/.GR_STATUS` reads `IN_PROGRESS` or `grestore.pid` exists.
 - `MACHTYPE=BEP` short-circuits DB export (`:410`) and skips retrofits. BEPs take the short path through the machine.
 - `inc_upgrader` parses `getopts "c:suhnL"` (`:1558`); `inc_upgrade` parses `getopts "c:sunmhL"`. `-S` is free in both.
@@ -82,12 +84,12 @@ No `reboot`, `shutdown` or `init 6` anywhere in the script. `swibootinc` boots t
 | # | Decision | Rationale |
 |---|---|---|
 | 1 | True per-state stepping, gated inside `inc_upgrader` | Checks can attach to every state |
-| 2 | One resident gated process per host, not re-invocation per state | Preserves today's execution semantics exactly; no `RETROROOT` re-entry hazard; preamble runs once |
+| 2 | One resident gated process, not re-invocation per state | Preserves today's execution semantics exactly; no `RETROROOT` re-entry hazard; preamble runs once |
 | 3 | New repository `nfupgrader`, Python 3.6.8, stdlib only | No runtime dependencies on a customer box |
 | 4 | Vendor the check and multibox logic from `nf-install` | `InternalChecks` and `multibox_config.py` are the expensive parts to rebuild |
-| 5 | Coordinator model — one host drives the site | The multi-host dance is the actual customer pain |
-| 6 | Coordinator runs on a FEP | BEPs are the thin side of the site |
-| 7 | ssh-only transport; nothing installed on peer hosts | Simplest thing that works; revisit if it gets ugly |
+| 5 | **Local-host upgrade only; the tool runs on each host in turn** | Support asked to narrow scope; removes the coordinator, remote launch, and cross-host failure handling |
+| 6 | **Peer hosts are read-only** — status displayed, never driven | Keeps the "see all the hosts" requirement without the risk and complexity of remote control |
+| 7 | ssh used only to *read* peer status; nothing installed on peers | Read-only ssh is best-effort and low-risk; a peer that is unreachable simply shows unknown |
 | 8 | Checks defined as JSON for common kinds, code for the rest | Mirrors what `nf-install` already does |
 | 9 | ERROR blocks the Next button, with a logged override | A customer stuck at 2am on a slightly wrong check is worse than a recorded override |
 | 10 | Token auth, single-use, exchanged for a session cookie | No account management; access scoped to whoever had a root shell |
@@ -112,22 +114,23 @@ Two consequences, accepted knowingly:
 ## Architecture
 
 ```
-Customer desk                fep1 (coordinator)                  fep2 / bep1 / bep2
-─────────────                ──────────────────                  ──────────────────
-browser                      /opt/nfupgrader                      gated inc_upgrader
-  │                            http.server on 127.0.0.1            (detached)
-  └── ssh -L tunnel ──────►    site plan + progress              state file
-                               audit log                         trace file
-                               web/ static assets                     ▲
-                                    │                                 │
-                               gated inc_upgrader              short one-shot ssh:
-                                 (detached, local)             launch / drop go-token /
-                                                               read state / tail trace
+Customer desk                THIS host (being upgraded)          peer hosts (display only)
+─────────────                ──────────────────────────          ─────────────────────────
+browser                      /opt/nfupgrader                      fep2 / bep1 / bep2
+  │                            http.server on 127.0.0.1
+  └── ssh -L tunnel ──────►    local progress + audit log         sshd
+                               web/ static assets                      ▲
+                                    │                                  │
+                               gated inc_upgrader             read-only ssh, one-shot:
+                                 (detached, LOCAL only)        rpm -qi / readlink /
+                               state · gated · go · abort       cat .CNC_UP .GR_STATUS
+                               files, all local                 (best effort; unknown if
+                                                                 unreachable)
 ```
 
-One Python service, on one FEP, installed under `/opt/nfupgrader` so the symlink flip cannot touch it. Peer hosts need only `sshd`.
+One Python service per host, installed under `/opt/nfupgrader` so the symlink flip cannot touch it. It upgrades **only the host it runs on**; the customer starts it again on the next host they want to upgrade.
 
-No long-lived ssh session. The coordinator ssh's once per host to launch that host's `inc_upgrader` detached, then every later interaction is a one-shot command. This matters: a resident gated process has to survive an entire stage phase, and an ssh channel held open for hours would not.
+The gate control files are all local — there is no remote launch and no go-token over ssh. ssh is used only to *read* peer status for the dashboard: a handful of one-shot commands (`rpm -qi`, `readlink`, `cat` of marker files), best-effort, with an unreachable peer shown as unknown. Peer status collection never blocks the local upgrade and never writes anything on a peer.
 
 ### Modules
 
@@ -135,10 +138,10 @@ Each is one file with one purpose.
 
 | Module | Responsibility |
 |---|---|
-| `host.py` | **The one seam.** `Host.run(argv)` executes locally or over ssh and returns exit status, stdout, stderr. Every collector, check and action goes through it. |
-| `site.py` | Parses `/usr/cnc/features/cnc.cnfg` into a FEP/BEP inventory with mates. Vendored from `nf-install/modules/multibox_config.py`. |
+| `host.py` | **The one seam.** `Host.run(argv)` executes locally, or over ssh for read-only peer collection, and returns exit status, stdout, stderr. Every collector, check and action goes through it. Local upgrade actions only ever use the local `Host`; ssh is reserved for peer *reads*. |
+| `site.py` | Parses `/usr/cnc/features/cnc.cnfg` into a FEP/BEP inventory with mates, and identifies which entry is the local host. Vendored from `nf-install/modules/multibox_config.py`. |
 | `steps.py` | The state machine as data: state name, phase, human description, bound checks. |
-| `plan.py` | Site-wide plan and persisted progress. |
+| `progress.py` | Local upgrade progress, re-derived from the state/gated/pid files on every read. No site-wide plan — there is nothing to coordinate. |
 | `checks.py` | JSON-defined checks plus coded ones. Vendored from `nf-install/modules/system_checks.py`, curses stripped. |
 | `collect.py` | Tier-1 and tier-2 fact gathering. |
 | `upgrade_cfg.py` | Build, import, validate and render the `.cfg`. |
@@ -146,7 +149,7 @@ Each is one file with one purpose.
 | `httpd.py` / `api.py` | stdlib HTTP server, token exchange, JSON endpoints. |
 | `web/` | Static HTML, CSS and vanilla JS. No framework, no CDN, no build step — the box may have no internet. |
 
-`host.py` is the load-bearing decision. The local/remote distinction exists in exactly one file, and a fake `Host` makes the entire system testable without a real box — which matters for something that cannot be casually run.
+`host.py` is still the load-bearing decision even though control is local-only: it isolates the read-only ssh used for peer status, and a fake `Host` makes the entire system — local upgrade plus peer dashboard — testable without a real box, which matters for something that cannot be casually run.
 
 ---
 
@@ -185,14 +188,16 @@ The semantics fall out of the existing code: the case arm advances `STATE` to th
 
 ### Control files in `${INCLOGDIR}`
 
+All four files are local to the host being upgraded.
+
 | File | Written by | Meaning |
 |---|---|---|
 | `.${HOST}_STATE` | script (exists today) | Next state to run — authoritative |
 | `.${HOST}_GATED` | script (new) | Parked. Contains state, pid, epoch timestamp |
-| `.${HOST}_GO` | coordinator (new) | Advance one state |
-| `.${HOST}_ABORT` | coordinator (new) | Stop cleanly at the gate |
+| `.${HOST}_GO` | the service (new) | Advance one state |
+| `.${HOST}_ABORT` | the service (new) | Stop cleanly at the gate |
 
-The coordinator distinguishes three conditions with `kill -0`:
+The service distinguishes three conditions with `kill -0` on the local pid:
 
 - **parked** — `GATED` present, pid alive
 - **running** — no `GATED`, pid alive
@@ -209,11 +214,9 @@ The `swsstart` arm becomes two arms:
 
 Backward-compatible without special handling: an old state file can only ever contain `swsstart`, which still resumes correctly into the same sequence of actions.
 
-### Site plan
+### Local progress, not a site plan
 
-`plan.json` under `/opt/nfupgrader/var` holds host order and per-host phase.
-
-**The plan is advisory; the boxes are authoritative.** On every poll and on every coordinator restart, per-host truth is re-derived from that host's state file, gated marker and pid liveness. The coordinator never displays its own memory of what a host was doing.
+There is no site-wide plan file — the tool drives one host, so there is nothing to sequence. Local upgrade progress is **re-derived on every read** from the local state file, gated marker and pid liveness, and on every service restart. The service never displays its own memory of what the upgrade was doing; the on-disk files are authoritative. This is the same reconciliation discipline the coordinator design used, reduced to a single host.
 
 ---
 
@@ -225,7 +228,7 @@ A check entry carries the `nf-install` shape — `name`, `description`, `fail_te
 
 **Coded checks** handle what JSON cannot: staged-versus-installed generic comparison, retrofit log scanning for FAIL lines, `dbcheck -AV` error counts.
 
-Every check runs through `Host.run`, so a check behaves identically local and remote with no per-check awareness of where it is.
+Every check runs through `Host.run` against the **local** host — checks gate the local upgrade, so they run where the upgrade runs. (Peer status is collected separately and read-only; it is display, not a gate.)
 
 **Failure policy:** an ERROR disables the Next button. Overriding requires a typed confirmation and a reason. Both the override and the reason go to the audit log and to the host's trace file. A WARNING is displayed and ignorable.
 
@@ -233,11 +236,13 @@ Every check runs through `Host.run`, so a check behaves identically local and re
 
 ## Information display
 
-**Tier 1 — always true.** `rpm -qi` on `netFLEX-CORE`, `netFLEX-CORE-PATCH`, `netFLEX-CORE-IPATCH`; the targets of `/usr/cnc`, `/usr/cnc_stage`, `/usr/cnc_saved`; the `cnc.cnfg` parse; `.CNC_UP`; `.GR_STATUS`; `grestore.pid`; `df`; the state file. None of it depends on the application running or on a binary that moves.
+Collected for the **local host** in full, and for **peers** read-only over ssh (tier 1 only, best-effort).
 
-**Tier 2 — app-dependent.** `incinfo`, `rdb version`, `rdb test`, `dbcheck -AV` error count, NE status from `/usr/cnc/ambin/up`. Fetched only when `.CNC_UP` exists; rendered as "unavailable" rather than stale when it does not.
+**Tier 1 — always true.** `rpm -qi` on `netFLEX-CORE`, `netFLEX-CORE-PATCH`, `netFLEX-CORE-IPATCH`; the targets of `/usr/cnc`, `/usr/cnc_stage`, `/usr/cnc_saved`; the `cnc.cnfg` parse; `.CNC_UP`; `.GR_STATUS`; `grestore.pid`; `df`; the state file. None of it depends on the application running or on a binary that moves. These are the facts the tool reads from peers as well as locally.
 
-**Site view** shows per host: type and number, ssh reachability, app up/down, installed version, staged version, current state. Plus a GR panel (transfer status, restore status, and elapsed time when blocked) and a local install panel (symlink targets, CORE/PATCH/IPATCH versions).
+**Tier 2 — app-dependent.** `incinfo`, `rdb version`, `rdb test`, `dbcheck -AV` error count, NE status from `/usr/cnc/ambin/up`. Fetched only when `.CNC_UP` exists; rendered as "unavailable" rather than stale when it does not. Local host only — not gathered from peers.
+
+**Site view** shows every host: type and number, ssh reachability, app up/down, installed version, staged version, and (for the local host) current upgrade state. The local host is marked as the one this instance can act on; all others are read-only. A peer that is unreachable over ssh shows unknown. Plus a GR panel (transfer status, restore status, and elapsed time when blocked) and a local install panel (symlink targets, CORE/PATCH/IPATCH versions).
 
 `nf-install`'s `reports.json` — NE dumps, database exports, per-filesystem checks — is deliberately **not** ported. It would let a customer run `inc_db --export` mid-upgrade. Possible later as a separate support-facing tab.
 
@@ -262,9 +267,9 @@ Fields handled: `INCLOGDIR`, `NEW_GENERIC`, `NEW_LOAD`, `DEPOTFILE`, `PATCHDEPOT
 
 Append-only JSONL under `/opt/nfupgrader/var`, with a human-readable rendering available in the UI.
 
-Recorded: every login and token redemption, every step launch with its full argv, every go-token drop, every check result, every override with its reason, every abort, every config written, and every ssh command with target host and exit status.
+Recorded: every login and token redemption, every step launch with its full argv, every go-token drop, every check result, every override with its reason, every abort, every config written, and every read-only peer ssh command with target host and exit status.
 
-Entries are also appended to each host's existing trace file, so the record appears in whatever log bundle support already collects.
+Entries are also appended to the local host's existing trace file, so the record appears in whatever log bundle support already collects.
 
 This is the requirement Dan stated as the condition for accepting the auth and transport risks: *"as long as there is a log file for the whole thing."*
 
@@ -274,47 +279,41 @@ This is the requirement Dan stated as the condition for accepting the auth and t
 
 | Condition | Behaviour |
 |---|---|
-| Host unreachable over ssh | Reported as unknown. State is never inferred. |
-| Gated process dead | Offered as a resume — relaunched detached from its state file. |
+| Peer unreachable over ssh | Shown as unknown in the site view. Never inferred. Never affects the local upgrade. |
+| Local gated process dead | Offered as a resume — relaunched detached from the local state file. |
 | GR transfer or restore in progress | Its own status: "blocked on GR transfer, 47 minutes elapsed", never a hang. `check_gr_inprogress` blocks inside the script for up to 4 hours. |
 | Check fails with ERROR | Next disabled; override available with a typed reason. |
-| Coordinator crash or restart | Full reconciliation from per-host state files, gated markers and pid liveness. |
-| One host fails | Per-host status only. The site is never aborted wholesale. |
+| Service crash or restart | Full reconciliation of local progress from the local state file, gated marker and pid liveness. |
 
 ---
 
 ## Testing
 
-The fake `Host` is the whole strategy. Canned command output drives the state machine, the checks engine and the dashboard with no boxes involved.
+The fake `Host` is the whole strategy. Canned command output drives the state machine, the checks engine and the dashboard with no boxes involved — including canned peer output for the read-only site view.
 
 - Fixture `cnc.cnfg` files for singlebox, multibox and GR layouts.
 - The shell gate is tested standalone against a stub `inc_upgrader` before it goes near the real one.
-- A real-box walk-through on a lab FEP closes each phase.
+- A real-box walk-through on a lab host closes each phase.
 
 ---
 
 ## Phasing
 
-Six subsystems. Each phase gets its own spec and plan.
+Each phase gets its own spec and plan. The narrowing to local-host-only collapsed the former multi-host coordination phase into a small read-only peer-collection step folded into the dashboard.
 
 | Phase | Content |
 |---|---|
-| 1 | `-S` gate + `swsstart` split, driven by a CLI, single host. Nothing else is testable until stepping works. |
-| 2 | `host.py` / `site.py` / `plan.py` + web UI, single host, live output, audit log. |
-| 3 | Multi-host coordination over ssh. |
-| 4 | Checks engine. |
-| 5 | Dashboard, tiers 1 and 2, multibox and GR views. |
-| 6 | Config builder. |
+| 1 | `-S` gate + `swsstart` split, driven by a CLI, local host. Nothing else is testable until stepping works. |
+| 2 | `host.py` / `site.py` / `progress.py` + web UI, local host, live output, audit log. |
+| 3 | Checks engine. |
+| 4 | Dashboard: local tiers 1 and 2, plus read-only peer status over ssh, GR and multibox views. |
+| 5 | Config builder. |
 
 ---
 
 ## Open Questions
 
-An input Dan is confirming, not unresolved design.
-
-1. **Host ordering.** For a multibox site: stage every host first and then upgrade every host, or take each host all the way through? Within a phase, BEPs before FEPs or the reverse? Dan is confirming this himself.
-
-   The mechanism does not depend on the answer. Order is a data value in `plan.json`, and the tool proposes a default that the customer confirms on a review screen. Only the default value is pending.
+None. The host-ordering question is moot under local-host-only scope — the customer chooses which host to run the tool on and in what order, host by host.
 
 ---
 
