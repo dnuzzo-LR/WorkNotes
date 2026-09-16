@@ -5,7 +5,9 @@
 **Repository:** `nfupgrader`
 **Author:** Dan Nuzzo, with Claude
 
-**Revision 2026-09-16:** After review with customer support, scope narrowed to **upgrade the local host only**. The tool no longer coordinates or drives upgrades on other hosts. It still *displays* read-only status for every host in the site. This removed the coordinator, the remote gated process, the go-token-over-ssh transport, and the host-ordering question. ssh survives solely as a read-only channel for peer status. Sections below reflect this; the coordinator design is preserved only in the git history of this file.
+**Revision 2026-09-16 (a):** After review with customer support, scope narrowed to **upgrade the local host only**. The tool no longer coordinates or drives upgrades on other hosts. It still *displays* read-only status for every host in the site. This removed the coordinator, the remote gated process, the go-token-over-ssh transport, and the host-ordering question. ssh survives solely as a read-only channel for peer status. Sections below reflect this; the coordinator design is preserved only in the git history of this file.
+
+**Revision 2026-09-16 (b):** Two additions. (1) The scripts are **forked, not modified** — new `nf_upgrade` / `nf_upgrader` are created drop-in behavior-compatible with the originals, which are left untouched, so they can eventually replace them once proven. The `-S` gate, the `swsstart` split and the logging cleanup all land in the forks only. (2) A **logging cleanup** gives every emitted line a severity prefix (`INFO` / `WARN` / `ERROR` / `FATAL`) and tags sub-command output as `EXEC`, and the web UI gains a severity-filterable log viewer over the trace file.
 
 ---
 
@@ -97,6 +99,9 @@ No `reboot`, `shutdown` or `init 6` anywhere in the script. `swibootinc` boots t
 | 12 | Dashboard shows always-true facts, plus app-dependent detail only when the app is up | Most information sources live under the symlink that moves |
 | 13 | Config builder *and* import, both ending at a review screen | Hand-writing the `.cfg` is a real part of the unfriendliness |
 | 14 | Split the `swsstart` arm into `swsstart` + `swscoreupgrade` | Puts a gate in front of the CORE RPM install; backward-compatible for free |
+| 15 | **Fork the scripts** — new `nf_upgrade` / `nf_upgrader`, originals untouched | The gate + log cleanup touch too much of the battle-tested engine to edit in place; forks are drop-in compatible and can replace the originals once proven |
+| 16 | **Logging cleanup** — severity prefix on every line, `EXEC` for sub-command output | Consistent, machine-parseable log the viewer can color and filter |
+| 17 | Sub-command output wrapped via a status-preserving helper, not `cmd \| sed` | A pipe destroys `$?`, and `PIPESTATUS`/`pipefail` are ksh93-only; the helper is ksh88-safe |
 
 ### Note on decision 11
 
@@ -153,11 +158,15 @@ Each is one file with one purpose.
 
 ---
 
-## The `inc_upgrader` contract
+## The forked scripts (`nf_upgrade` / `nf_upgrader`)
+
+`inc_upgrade` and `inc_upgrader` are **not modified**. New `nf_upgrade` and `nf_upgrader` are forked from them, carry all the changes below, and are **drop-in behavior-compatible**: same flags, same config variables, same state machine, same state/control files, same exit codes. The only intended differences are the opt-in `-S` gate (identical behavior when unused) and the log line format (output formatting, not behavior). The goal is that ops can replace the originals with the forks once they are proven equivalent.
+
+Backward-compatibility is a test target, not just an intention — see [Testing](#testing).
 
 ### The gate
 
-A new flag `-S` enables step mode. It is off by default, so every existing caller is unaffected. One new function:
+A new flag `-S` enables step mode. It is off by default, so an unflagged `nf_upgrader` behaves exactly like `inc_upgrader`. One new function:
 
 ```ksh
 function step_gate
@@ -180,11 +189,11 @@ function step_gate
 }
 ```
 
-Called immediately after `write_state $STATE` at `:1106` and `:1468`. One function, two call lines.
+Called immediately after `write_state $STATE` at the two loop ends (`:1106` and `:1468` in the original). One function, two call lines.
 
 The semantics fall out of the existing code: the case arm advances `STATE` to the *next* state before `write_state` runs, so the gate parks with the state file already naming what comes next. "Finished the last one, waiting before the next one" — exactly the resume point the script already understands.
 
-`-S` must also be accepted by `inc_upgrade`, which passes `$*` through.
+`-S` must also be accepted by `nf_upgrade`, which passes `$*` through to `nf_upgrader`.
 
 ### Control files in `${INCLOGDIR}`
 
@@ -217,6 +226,70 @@ Backward-compatible without special handling: an old state file can only ever co
 ### Local progress, not a site plan
 
 There is no site-wide plan file — the tool drives one host, so there is nothing to sequence. Local upgrade progress is **re-derived on every read** from the local state file, gated marker and pid liveness, and on every service restart. The service never displays its own memory of what the upgrade was doing; the on-disk files are authoritative. This is the same reconciliation discipline the coordinator design used, reduced to a single host.
+
+---
+
+## Logging cleanup and the log viewer
+
+Today the scripts emit ~305 lines through a mix of `printf`, `print` and `echo`, with inconsistent severity: 66 sites carry the word `ERROR` or `WARNING`, the rest carry nothing. The forks give every emitted line a severity prefix and a timestamp, and tag sub-command output distinctly, so the trace file is machine-parseable and the web UI can color and filter it.
+
+### Line format
+
+```
+2026-09-16 14:03:11 INFO  Exporting GSHM data to /usr/cnc_stage/export
+2026-09-16 14:03:12 EXEC  [rpm] netFLEX-CORE-5.4.0-29 ...
+2026-09-16 14:05:44 ERROR dbcheck -AV reported 3 errors
+2026-09-16 14:05:44 FATAL Aborting upgrade
+```
+
+Five line-classes in a single fixed column: `INFO`, `WARN`, `ERROR`, `FATAL`, and `EXEC`. The first four are severities of the script's own output; `EXEC` means "raw output from a sub-process," which the viewer can dim, indent or collapse under its step.
+
+### How the script's own output is converted
+
+Four helpers defined near the top of each fork:
+
+```ksh
+log()      { printf '%s %-5s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" "$2"; }
+loginfo()  { log INFO  "$*"; }
+logwarn()  { log WARN  "$*"; }
+logerror() { log ERROR "$*"; }
+logfatal() { log FATAL "$*"; }
+```
+
+Emit sites are converted: the 66 `ERROR`/`WARNING` sites become `logerror` / `logwarn`, everything else becomes `loginfo`. `fail_upgrade` and `exit_upgrade` emit a `FATAL` line — and because many current `ERROR:`-then-`fail_upgrade` sequences are in fact fatal, the pass fixes their severity along the way.
+
+**Two exclusions — these sites are left raw:**
+
+1. **Control-file writes** — `${STATEFILE}` (`:138`), `${WEBSTATEFILE}` (`:143`), `.OLD_GENERIC` (`:862`), `.OLD_LOAD` (`:863`), `.LPRESULT` (`:1139`). These are data files the script itself reads back with `cat`. A prefix here would corrupt them and break resume. This is the trap that rules out a blind global substitution.
+2. **Banner and usage text** — cosmetic; left as printed.
+
+### How sub-command output is tagged
+
+Sub-commands whose output currently flows to the trace file are wrapped so each of their lines comes out as `EXEC [tag]`. The wrap must **not** use `cmd | sed` — a pipe makes `$?` reflect `sed`, not the command, and many call sites check `$?` immediately after. `PIPESTATUS` and `set -o pipefail` would fix that but are ksh93-only; the forks are `#!/usr/bin/ksh` and must stay ksh88-safe. So a status-preserving helper:
+
+```ksh
+run_logged()   # run_logged <tag> cmd args...
+{
+	typeset tag="$1"; shift
+	typeset tmp="${INCLOGDIR}/.run.$$"
+	"$@" > "${tmp}" 2>&1
+	typeset rc=$?
+	sed "s/^/$(date '+%Y-%m-%d %H:%M:%S') EXEC  [${tag}] /" "${tmp}"
+	rm -f "${tmp}"
+	[ ${rc} -ne 0 ] && logwarn "[${tag}] exited ${rc}"
+	return ${rc}
+}
+```
+
+Call sites become `run_logged rpm rpm -qi netFLEX-CORE; if [ $? -ne 0 ] ...` — the child's real exit status is preserved, and a non-zero exit is noted without the caller having to. A non-zero `rc` is surfaced as a `WARN`; whether it is actually fatal remains the caller's existing decision.
+
+**Not wrapped:** sub-commands whose output is captured into a variable (`X=$(cmd)`) or redirected to a control file — wrapping would corrupt the captured value or the data file. Those keep their current form.
+
+With script output prefixed and sub-command output tagged, every line in the trace file is classified. Any unmatched line — for example output from an old-format log or a stray write — is shown by the viewer as `INFO`.
+
+### The viewer
+
+Folds into the phase-2 live-output feature. Same trace file, plus: severity filter (e.g. show `WARN` and above), per-class color, `EXEC` lines dimmable or collapsible, and tail-follow for the running step. The file is served read-only.
 
 ---
 
@@ -292,8 +365,10 @@ This is the requirement Dan stated as the condition for accepting the auth and t
 The fake `Host` is the whole strategy. Canned command output drives the state machine, the checks engine and the dashboard with no boxes involved — including canned peer output for the read-only site view.
 
 - Fixture `cnc.cnfg` files for singlebox, multibox and GR layouts.
-- The shell gate is tested standalone against a stub `inc_upgrader` before it goes near the real one.
+- The shell gate is tested standalone against a stub `nf_upgrader` before it goes near the real one.
 - A real-box walk-through on a lab host closes each phase.
+
+**Fork equivalence is its own test target.** The whole point of forking is that `nf_upgrader` can replace `inc_upgrader`. So the fork is verified to match: run both (original, and fork *without* `-S`) against the same fixture inputs and diff the resulting state/control-file transitions and exit codes. They must be identical. The trace file will differ (that is the log-format change) and is excluded from that diff — but the log format is checked separately by asserting every non-excluded line matches the `TIMESTAMP SEVERITY …` grammar.
 
 ---
 
@@ -303,11 +378,14 @@ Each phase gets its own spec and plan. The narrowing to local-host-only collapse
 
 | Phase | Content |
 |---|---|
-| 1 | `-S` gate + `swsstart` split, driven by a CLI, local host. Nothing else is testable until stepping works. |
-| 2 | `host.py` / `site.py` / `progress.py` + web UI, local host, live output, audit log. |
-| 3 | Checks engine. |
-| 4 | Dashboard: local tiers 1 and 2, plus read-only peer status over ssh, GR and multibox views. |
-| 5 | Config builder. |
+| 1 | Fork `nf_upgrade` / `nf_upgrader`; add the `-S` gate + `swsstart` split; prove equivalence to the originals without `-S`. Driven by a CLI, local host. Nothing else is testable until stepping works. |
+| 2 | Logging cleanup in the forks: `log*` helpers, `run_logged`, emit-site conversion, grammar assertion. |
+| 3 | `host.py` / `site.py` / `progress.py` + web UI, local host, live output + severity-filtering log viewer, audit log. |
+| 4 | Checks engine. |
+| 5 | Dashboard: local tiers 1 and 2, plus read-only peer status over ssh, GR and multibox views. |
+| 6 | Config builder. |
+
+Phases 1 and 2 both touch the forks and could merge, but keeping the gate (behavioral) separate from the logging pass (formatting) keeps the equivalence test in phase 1 clean — it runs before the trace format changes underneath it.
 
 ---
 
@@ -319,6 +397,6 @@ None. The host-ordering question is moot under local-host-only scope — the cus
 
 ## References
 
-- `3b2/shell/inc_upgrade`, `3b2/shell/inc_upgrader`, `3b2/shell/linux_packages`, `3b2/shell/post-install.sh` — netflex repo, commit `776f42242`
+- `3b2/shell/inc_upgrade`, `3b2/shell/inc_upgrader`, `3b2/shell/linux_packages`, `3b2/shell/post-install.sh` — netflex repo, commit `776f42242`. The originals; `nf_upgrade` / `nf_upgrader` will be forked from these two and live alongside them in `3b2/shell/`.
 - `~/Git/nf-install` — `modules/system_checks.py`, `modules/multibox_config.py`, `modules/upgrade_manager.py`, `system-checks.json`, `reports.json`, `UPGRADE_INTEGRATION_README.md`
 - `gui/web-terminal` — existing standalone web service in the netflex repo (Rust/axum). Its `PreAuthenticated` session model (`src/session.rs:33`) depends on the netFLEX web GUI and does not carry over.
