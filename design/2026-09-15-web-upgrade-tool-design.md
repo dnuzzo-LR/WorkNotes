@@ -270,7 +270,7 @@ Collected for the **local host** in full, and for **peers** read-only over ssh (
 
 **Tier 1 — always true.** `rpm -qi` on `netFLEX-CORE`, `netFLEX-CORE-PATCH`, `netFLEX-CORE-IPATCH`; the targets of `/usr/cnc`, `/usr/cnc_stage`, `/usr/cnc_saved`; the `cnc.cnfg` parse; `.CNC_UP`; `.GR_STATUS`; `grestore.pid`; `df`; the state file. None of it depends on the application running or on a binary that moves. These are the facts the tool reads from peers as well as locally.
 
-**Tier 2 — app-dependent.** `incinfo`, `rdb version`, `rdb test`, `dbcheck -AV` error count, NE status from `/usr/cnc/ambin/up`. Fetched only when `.CNC_UP` exists; rendered as "unavailable" rather than stale when it does not. Local host only — not gathered from peers.
+**Tier 2 — app-dependent.** `incinfo`, `rdb version`, `rdb test`, `dbcheck -AV` error count, NE status from `/usr/cnc/ambin/up`, and multibox link status from `/usr/cnc/mbin/nestat -B`. Fetched only when `.CNC_UP` exists; rendered as "unavailable" rather than stale when it does not. Local host only — not gathered from peers.
 
 ### Per-host information displayed
 
@@ -299,10 +299,15 @@ The site view shows one row or card per host. The **local host** shows every fie
 | RDB version / test | `rdb version`, `rdb test` | ✅ | — | ✅ |
 | `dbcheck -AV` error count | `dbcheck -AV` | ✅ | — | ✅ |
 | NE status summary | `/usr/cnc/ambin/up` | ✅ | — | ✅ |
+| Multibox link status (rdr/wtr per connected host) | `/usr/cnc/mbin/nestat -B` | ✅ | — | ✅ |
 
 Peer rows are tier-1 by deliberate choice (decision 7): tier-2 fields would need either the app up on the peer or commands run under its `/usr/cnc`, which is more coupling and risk than a status display warrants. The upgrade-progress fields are local-only because this instance observes only its own upgrade.
 
-Two panels sit alongside the per-host rows: a **GR panel** (transfer status, restore status, and elapsed time when the local upgrade is blocked in `check_gr_inprogress`) and a **local install panel** (the three symlink targets and the CORE / PATCH / IPATCH versions for the host being upgraded).
+Three panels sit alongside the per-host rows:
+
+- **GR panel** — transfer status, restore status, and elapsed time when the local upgrade is blocked in `check_gr_inprogress`.
+- **Local install panel** — the three symlink targets and the CORE / PATCH / IPATCH versions for the host being upgraded.
+- **Multibox link panel** — from `nestat -B` on the local host: one line per connected host giving the WTR and RDR socket state (`UP` / `DOWN`), the port, the last state-change time, and the message count. This is the local host's own view of its links to the other boxes; it is a tier-2 read (app must be up) and is not gathered from peers. On a single-box system the panel is simply empty.
 
 `nf-install`'s `reports.json` — NE dumps, database exports, per-filesystem checks — is deliberately **not** ported. It would let a customer run `inc_db --export` mid-upgrade. Possible later as a separate support-facing tab.
 
