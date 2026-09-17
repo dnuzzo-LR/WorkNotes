@@ -272,7 +272,37 @@ Collected for the **local host** in full, and for **peers** read-only over ssh (
 
 **Tier 2 — app-dependent.** `incinfo`, `rdb version`, `rdb test`, `dbcheck -AV` error count, NE status from `/usr/cnc/ambin/up`. Fetched only when `.CNC_UP` exists; rendered as "unavailable" rather than stale when it does not. Local host only — not gathered from peers.
 
-**Site view** shows every host: type and number, ssh reachability, app up/down, installed version, staged version, and (for the local host) current upgrade state. The local host is marked as the one this instance can act on; all others are read-only. A peer that is unreachable over ssh shows unknown. Plus a GR panel (transfer status, restore status, and elapsed time when blocked) and a local install panel (symlink targets, CORE/PATCH/IPATCH versions).
+### Per-host information displayed
+
+The site view shows one row or card per host. The **local host** shows every field below; a **peer** shows the tier-1 fields (identity, reachability, install, GR) and omits the tier-2 and upgrade-progress fields, which require the app or a running upgrade the tool is not observing on that host. A field that cannot be read — peer unreachable, or app down for a tier-2 field — renders as `unknown` / `unavailable`, never as a stale or guessed value.
+
+| Field | Source | Local | Peer | Needs app up |
+|---|---|:---:|:---:|:---:|
+| Hostname | `cnc.cnfg` / `hostname` | ✅ | ✅ | — |
+| Role + number (FEP *n* / BEP *n*) | `cnc.cnfg` machine record (`type` 1=FEP, 0=BEP) | ✅ | ✅ | — |
+| Mate host | `cnc.cnfg` mate fields | ✅ | ✅ | — |
+| This-host marker (the one this instance can upgrade) | local identity vs `cnc.cnfg` | ✅ | — | — |
+| ssh reachability | ssh probe result | — | ✅ | — |
+| Installed CORE version | `rpm -qi netFLEX-CORE` | ✅ | ✅ | — |
+| PATCH / IPATCH version | `rpm -qi netFLEX-CORE-PATCH` / `-IPATCH` | ✅ | ✅ | — |
+| Installed load path | `readlink /usr/cnc` | ✅ | ✅ | — |
+| Staged load path + version | `readlink /usr/cnc_stage` + `rpm -qi` there | ✅ | ✅ | — |
+| Saved (rollback) load path | `readlink /usr/cnc_saved` | ✅ | ✅ | — |
+| App up / down | `.CNC_UP` present | ✅ | ✅ | — |
+| Machine type (NMS / …) | `mach_type` | ✅ | ✅ | — |
+| GR transfer status | `.GR_STATUS` (`IN_PROGRESS` / `COMPLETED` / absent) | ✅ | ✅ | — |
+| GR restore status | `grestore.pid` present | ✅ | ✅ | — |
+| Filesystem headroom (`/usr4`, `/usr2`, `/tmp`, `/var`) | `df -k` | ✅ | ✅ | — |
+| **Upgrade progress** (phase, current state, *completed / total*) | `.${HOST}_STATE` + `steps.py` + pid liveness | ✅ | — | — |
+| **Run status** (running / done / died) | pid liveness + terminal state | ✅ | — | — |
+| `incinfo` detail | `incinfo` | ✅ | — | ✅ |
+| RDB version / test | `rdb version`, `rdb test` | ✅ | — | ✅ |
+| `dbcheck -AV` error count | `dbcheck -AV` | ✅ | — | ✅ |
+| NE status summary | `/usr/cnc/ambin/up` | ✅ | — | ✅ |
+
+Peer rows are tier-1 by deliberate choice (decision 7): tier-2 fields would need either the app up on the peer or commands run under its `/usr/cnc`, which is more coupling and risk than a status display warrants. The upgrade-progress fields are local-only because this instance observes only its own upgrade.
+
+Two panels sit alongside the per-host rows: a **GR panel** (transfer status, restore status, and elapsed time when the local upgrade is blocked in `check_gr_inprogress`) and a **local install panel** (the three symlink targets and the CORE / PATCH / IPATCH versions for the host being upgraded).
 
 `nf-install`'s `reports.json` — NE dumps, database exports, per-filesystem checks — is deliberately **not** ported. It would let a customer run `inc_db --export` mid-upgrade. Possible later as a separate support-facing tab.
 
