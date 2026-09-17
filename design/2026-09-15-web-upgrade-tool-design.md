@@ -9,6 +9,8 @@
 
 **Revision 2026-09-16 (b):** Two additions. (1) The scripts are **forked, not modified** — new `nf_upgrade` / `nf_upgrader` are created drop-in behavior-compatible with the originals, which are left untouched, so they can eventually replace them once proven. The `-S` gate, the `swsstart` split and the logging cleanup all land in the forks only. (2) A **logging cleanup** gives every emitted line a severity prefix (`INFO` / `WARN` / `ERROR` / `FATAL`) and tags sub-command output as `EXEC`, and the web UI gains a severity-filterable log viewer over the trace file.
 
+**Revision 2026-09-16 (c):** Per-state **stepping is dropped**. The upgrade runs straight through, as the original scripts do; the customer launches a phase and watches it. The UI keeps an **on-screen progress record**: how many states the phase has, how many have completed, and the current state — read from the existing state file, no pausing. This removes the `-S` gate, the `GO`/`GATED`/`ABORT` control files, and the `swsstart` split (its only purpose was to gate the CORE install). The **forks' sole functional change is now the logging cleanup.** Because nothing stops mid-run, checks reshape from per-state gates into **pre-flight** checks (block the Launch button, override allowed) and **post-flight** checks (advisory). Sections below reflect all of this.
+
 ---
 
 ## Problem
@@ -19,7 +21,8 @@ We want a web layer over those scripts that lets the customer step through the u
 
 ## Goals
 
-- Step through every upgrade state individually **on the local host**, so a check can be attached to each one.
+- Launch an upgrade **on the local host** and keep an on-screen progress record: how many states the phase has, how many have completed, and the current state.
+- Run pre-flight checks before launch and post-flight checks after completion.
 - Reuse the existing shell scripts as the engine. They are battle-tested; the web layer wraps them, it does not replace them.
 - Borrow the system-checking machinery from `nf-install`.
 - Show current installation facts: versions, GR status, multibox topology, and per-host status for the whole site — read-only for peers.
@@ -50,13 +53,13 @@ UPGRADE  (inc_upgrade -u):
               → swiretropass2 → swibootinc → postinstall → swidone
 ```
 
-`${INCLOGDIR}/.${HOSTNAME}_STATE` is written after each state (`write_state`, `:136`), but only as a crash-resume point — nothing pauses. Per-state stepping therefore requires a change to `inc_upgrader`.
+`${INCLOGDIR}/.${HOSTNAME}_STATE` is written after each state (`write_state`, `:136`) as a crash-resume point. **This is exactly the signal the progress record consumes** — the file advances as the run proceeds, and the UI maps the current state to its position in the ordered list. No script change is needed to observe progress. (An earlier revision added a pause-gate here for per-state stepping; that stepping was later dropped, so the gate is gone and the run proceeds untouched.)
 
-Both loops end identically with `esac; write_state $STATE; done` at `:1106` and `:1468`. A single gate inserted there covers all fifteen states.
+Both loops end identically with `esac; write_state $STATE; done` at `:1106` and `:1468` — the write-after-each-state that the progress record relies on.
 
 ### State arms are not one-to-one with state names
 
-The `swsstart` arm (`:1028-1042`) runs `doswsstart`, `calc_stage_space` *and* `doswscoreupgrade` together — so the largest single action in staging, installing the CORE RPM, has no pause point in front of it.
+The `swsstart` arm (`:1028-1042`) runs `doswsstart`, `calc_stage_space` *and* `doswscoreupgrade` together — so the largest single action in staging, installing the CORE RPM, sits inside one state. The progress record therefore dwells on `swsstart` while the CORE RPM installs; finer granularity there is surfaced through the new log lines, not by splitting the state (the split was considered and dropped — see decision 14).
 
 ### The `/usr/cnc` symlink is swapped mid-upgrade
 
@@ -85,21 +88,21 @@ No `reboot`, `shutdown` or `init 6` anywhere in the script. `swibootinc` boots t
 
 | # | Decision | Rationale |
 |---|---|---|
-| 1 | True per-state stepping, gated inside `inc_upgrader` | Checks can attach to every state |
-| 2 | One resident gated process, not re-invocation per state | Preserves today's execution semantics exactly; no `RETROROOT` re-entry hazard; preamble runs once |
+| 1 | **Launch-and-monitor, not stepping** — run the phase straight through, show a progress record (N states, completed, current) | Customer wanted visibility, not per-state control; keeps the fork minimal and the run identical to the original |
+| 2 | Run the fork detached (as the original `nohup`s it); monitor the state file + trace, never pause | Preserves today's execution semantics exactly; no `RETROROOT` re-entry hazard; preamble runs once |
 | 3 | New repository `nfupgrader`, Python 3.6.8, stdlib only | No runtime dependencies on a customer box |
 | 4 | Vendor the check and multibox logic from `nf-install` | `InternalChecks` and `multibox_config.py` are the expensive parts to rebuild |
 | 5 | **Local-host upgrade only; the tool runs on each host in turn** | Support asked to narrow scope; removes the coordinator, remote launch, and cross-host failure handling |
 | 6 | **Peer hosts are read-only** — status displayed, never driven | Keeps the "see all the hosts" requirement without the risk and complexity of remote control |
 | 7 | ssh used only to *read* peer status; nothing installed on peers | Read-only ssh is best-effort and low-risk; a peer that is unreachable simply shows unknown |
 | 8 | Checks defined as JSON for common kinds, code for the rest | Mirrors what `nf-install` already does |
-| 9 | ERROR blocks the Next button, with a logged override | A customer stuck at 2am on a slightly wrong check is worse than a recorded override |
+| 9 | Pre-flight ERROR blocks the Launch button, with a logged override; post-flight checks are advisory | Nothing stops mid-run, so checks gate the launch, not each state; a customer stuck at 2am on a slightly wrong check is worse than a recorded override |
 | 10 | Token auth, single-use, exchanged for a session cookie | No account management; access scoped to whoever had a root shell |
 | 11 | Plain HTTP bound to loopback; customer tunnels over ssh | Risk accepted by Dan; nothing is exposed and the token never crosses a network |
 | 12 | Dashboard shows always-true facts, plus app-dependent detail only when the app is up | Most information sources live under the symlink that moves |
 | 13 | Config builder *and* import, both ending at a review screen | Hand-writing the `.cfg` is a real part of the unfriendliness |
-| 14 | Split the `swsstart` arm into `swsstart` + `swscoreupgrade` | Puts a gate in front of the CORE RPM install; backward-compatible for free |
-| 15 | **Fork the scripts** — new `nf_upgrade` / `nf_upgrader`, originals untouched | The gate + log cleanup touch too much of the battle-tested engine to edit in place; forks are drop-in compatible and can replace the originals once proven |
+| 14 | ~~Split the `swsstart` arm~~ — **dropped** | Its only purpose was to gate the CORE install; with no stepping there is no gate, and dropping it keeps the fork strictly equivalent to the original |
+| 15 | **Fork the scripts** — new `nf_upgrade` / `nf_upgrader`, originals untouched | The log cleanup touches ~305 emit sites in the battle-tested engine; too much to edit in place. Forks are drop-in compatible and can replace the originals once proven |
 | 16 | **Logging cleanup** — severity prefix on every line, `EXEC` for sub-command output | Consistent, machine-parseable log the viewer can color and filter |
 | 17 | Sub-command output wrapped via a status-preserving helper, not `cmd \| sed` | A pipe destroys `$?`, and `PIPESTATUS`/`pipefail` are ksh93-only; the helper is ksh88-safe |
 
@@ -123,19 +126,19 @@ Customer desk                THIS host (being upgraded)          peer hosts (dis
 ─────────────                ──────────────────────────          ─────────────────────────
 browser                      /opt/nfupgrader                      fep2 / bep1 / bep2
   │                            http.server on 127.0.0.1
-  └── ssh -L tunnel ──────►    local progress + audit log         sshd
+  └── ssh -L tunnel ──────►    progress record + audit log        sshd
                                web/ static assets                      ▲
                                     │                                  │
-                               gated inc_upgrader             read-only ssh, one-shot:
-                                 (detached, LOCAL only)        rpm -qi / readlink /
-                               state · gated · go · abort       cat .CNC_UP .GR_STATUS
-                               files, all local                 (best effort; unknown if
-                                                                 unreachable)
+                               nf_upgrader                    read-only ssh, one-shot:
+                                 (detached, LOCAL only,        rpm -qi / readlink /
+                                  runs straight through)       cat .CNC_UP .GR_STATUS
+                               .${HOST}_STATE file  ◄──read     (best effort; unknown if
+                               trace file           ◄──tail     unreachable)
 ```
 
 One Python service per host, installed under `/opt/nfupgrader` so the symlink flip cannot touch it. It upgrades **only the host it runs on**; the customer starts it again on the next host they want to upgrade.
 
-The gate control files are all local — there is no remote launch and no go-token over ssh. ssh is used only to *read* peer status for the dashboard: a handful of one-shot commands (`rpm -qi`, `readlink`, `cat` of marker files), best-effort, with an unreachable peer shown as unknown. Peer status collection never blocks the local upgrade and never writes anything on a peer.
+The service launches `nf_upgrader` detached — exactly as the original `nohup`s `inc_upgrader` — and then **watches**, never steers: it reads the existing `.${HOST}_STATE` file for the progress record and tails the trace file for live output. There are no `GO`/`GATED`/`ABORT` files; the upgrade runs to completion on its own. ssh is used only to *read* peer status for the dashboard: a handful of one-shot commands (`rpm -qi`, `readlink`, `cat` of marker files), best-effort, with an unreachable peer shown as unknown. Peer status collection never blocks the local upgrade and never writes anything on a peer.
 
 ### Modules
 
@@ -145,8 +148,8 @@ Each is one file with one purpose.
 |---|---|
 | `host.py` | **The one seam.** `Host.run(argv)` executes locally, or over ssh for read-only peer collection, and returns exit status, stdout, stderr. Every collector, check and action goes through it. Local upgrade actions only ever use the local `Host`; ssh is reserved for peer *reads*. |
 | `site.py` | Parses `/usr/cnc/features/cnc.cnfg` into a FEP/BEP inventory with mates, and identifies which entry is the local host. Vendored from `nf-install/modules/multibox_config.py`. |
-| `steps.py` | The state machine as data: state name, phase, human description, bound checks. |
-| `progress.py` | Local upgrade progress, re-derived from the state/gated/pid files on every read. No site-wide plan — there is nothing to coordinate. |
+| `steps.py` | The ordered state list per phase as data: state name, phase, human description. Drives the "N states / completed / current" progress record. |
+| `progress.py` | Local upgrade progress, re-derived on every read from the state file, the trace tail and pid liveness: maps the current state to its index in `steps.py`'s ordered list to yield completed-count / total / current. No site-wide plan — there is nothing to coordinate. |
 | `checks.py` | JSON-defined checks plus coded ones. Vendored from `nf-install/modules/system_checks.py`, curses stripped. |
 | `collect.py` | Tier-1 and tier-2 fact gathering. |
 | `upgrade_cfg.py` | Build, import, validate and render the `.cfg`. |
@@ -160,72 +163,21 @@ Each is one file with one purpose.
 
 ## The forked scripts (`nf_upgrade` / `nf_upgrader`)
 
-`inc_upgrade` and `inc_upgrader` are **not modified**. New `nf_upgrade` and `nf_upgrader` are forked from them, carry all the changes below, and are **drop-in behavior-compatible**: same flags, same config variables, same state machine, same state/control files, same exit codes. The only intended differences are the opt-in `-S` gate (identical behavior when unused) and the log line format (output formatting, not behavior). The goal is that ops can replace the originals with the forks once they are proven equivalent.
+`inc_upgrade` and `inc_upgrader` are **not modified**. New `nf_upgrade` and `nf_upgrader` are forked from them, carry the logging cleanup below, and are **drop-in behavior-compatible**: same flags, same config variables, same state machine, same state/control files, same exit codes. The **only** intended difference is the log line format — output formatting, not behavior. There is no gate, no new flag, no new control file, and no change to the state machine. The goal is that ops can replace the originals with the forks once they are proven equivalent.
 
-Backward-compatibility is a test target, not just an intention — see [Testing](#testing).
+Behavior-compatibility is a test target, not just an intention — see [Testing](#testing).
 
-### The gate
+### The progress signal — no script change needed
 
-A new flag `-S` enables step mode. It is off by default, so an unflagged `nf_upgrader` behaves exactly like `inc_upgrader`. One new function:
+The original already writes `.${HOST}_STATE` after every state via `write_state` (`:136`). That is the entire signal the UI needs. The service reads that file, looks the current state up in `steps.py`'s ordered list for the phase, and renders **completed-count / total / current state**. Nothing pauses; the file simply advances as the upgrade runs, and the progress record follows it.
 
-```ksh
-function step_gate
-{
-	[ "${STEPMODE}" != "YES" ] && return
-	printf "STEP_GATE: parked before ${STATE} (`date`)\n"
-	printf "${STATE} $$ `date +%s`\n" > ${GATEDFILE}
-	while [ ! -f "${GOFILE}" -a ! -f "${ABORTFILE}" ]
-	do
-		sleep 2
-	done
-	rm -f ${GATEDFILE}
-	if [ -f "${ABORTFILE}" ]
-	then
-		rm -f ${ABORTFILE}
-		printf "STEP_GATE: abort requested at ${STATE}\n"
-		exit_upgrade
-	fi
-	rm -f ${GOFILE}
-}
-```
+Liveness is read the same way it always was — `kill -0` on the pid from the launch, plus the trace tail — to distinguish three conditions:
 
-Called immediately after `write_state $STATE` at the two loop ends (`:1106` and `:1468` in the original). One function, two call lines.
+- **running** — pid alive, state file advancing
+- **done** — pid exited, state file at `swscomplete` / `swidone`
+- **died** — pid gone, state file short of the terminal state
 
-The semantics fall out of the existing code: the case arm advances `STATE` to the *next* state before `write_state` runs, so the gate parks with the state file already naming what comes next. "Finished the last one, waiting before the next one" — exactly the resume point the script already understands.
-
-`-S` must also be accepted by `nf_upgrade`, which passes `$*` through to `nf_upgrader`.
-
-### Control files in `${INCLOGDIR}`
-
-All four files are local to the host being upgraded.
-
-| File | Written by | Meaning |
-|---|---|---|
-| `.${HOST}_STATE` | script (exists today) | Next state to run — authoritative |
-| `.${HOST}_GATED` | script (new) | Parked. Contains state, pid, epoch timestamp |
-| `.${HOST}_GO` | the service (new) | Advance one state |
-| `.${HOST}_ABORT` | the service (new) | Stop cleanly at the gate |
-
-The service distinguishes three conditions with `kill -0` on the local pid:
-
-- **parked** — `GATED` present, pid alive
-- **running** — no `GATED`, pid alive
-- **dead** — pid gone
-
-No new crash-recovery mechanism is needed. A dead process leaves the state file exactly as the existing resume path expects. The three new files exist only in step mode.
-
-### The `swsstart` split
-
-The `swsstart` arm becomes two arms:
-
-- `swsstart` — `doswsstart` + `calc_stage_space`, then `STATE=swscoreupgrade`
-- `swscoreupgrade` — `doswscoreupgrade`, then `STATE=swspatchinstall`
-
-Backward-compatible without special handling: an old state file can only ever contain `swsstart`, which still resumes correctly into the same sequence of actions.
-
-### Local progress, not a site plan
-
-There is no site-wide plan file — the tool drives one host, so there is nothing to sequence. Local upgrade progress is **re-derived on every read** from the local state file, gated marker and pid liveness, and on every service restart. The service never displays its own memory of what the upgrade was doing; the on-disk files are authoritative. This is the same reconciliation discipline the coordinator design used, reduced to a single host.
+A died process leaves the state file exactly as the existing resume path expects, so recovery is the original's own rerun path: the service offers to relaunch, and `nf_upgrader` resumes from the state file unchanged. This is the same reconciliation discipline the coordinator design used, reduced to a single host and to read-only observation.
 
 ---
 
@@ -295,15 +247,20 @@ Folds into the phase-2 live-output feature. Same trace file, plus: severity filt
 
 ## Checks engine
 
-A check entry carries the `nf-install` shape — `name`, `description`, `fail_text` — plus a binding: which state, `before` or `after` it, optionally narrowed by phase or by `MACHTYPE` so BEP-only and FEP-only checks are expressible.
+Because the upgrade no longer stops between states, checks are not bound to individual states. They run at the two moments the tool *does* control — before a phase launches and after it finishes:
+
+- **Pre-flight** — run before the Launch button acts, gating the launch. This is where disk space, staged-versus-installed generic, dbcheck cleanliness, GR-idle and the rest belong.
+- **Post-flight** — run after the phase reaches its terminal state, purely to report. Advisory; they annotate the completed run, they cannot un-launch it.
+
+A check entry carries the `nf-install` shape — `name`, `description`, `fail_text` — plus a binding of `preflight` or `postflight`, a phase (`stage` / `upgrade`), and an optional `MACHTYPE` narrowing so BEP-only and FEP-only checks are expressible.
 
 **JSON-expressible kinds:** rpm package, touchfile, system define, service status, disk space, kernel parameter, `limits.conf` entry (all already implemented in `nf-install`), plus file exists, symlink target, command exit status, command output match.
 
 **Coded checks** handle what JSON cannot: staged-versus-installed generic comparison, retrofit log scanning for FAIL lines, `dbcheck -AV` error counts.
 
-Every check runs through `Host.run` against the **local** host — checks gate the local upgrade, so they run where the upgrade runs. (Peer status is collected separately and read-only; it is display, not a gate.)
+Every check runs through `Host.run` against the **local** host — checks gate the local launch, so they run where the upgrade runs. (Peer status is collected separately and read-only; it is display, not a gate.)
 
-**Failure policy:** an ERROR disables the Next button. Overriding requires a typed confirmation and a reason. Both the override and the reason go to the audit log and to the host's trace file. A WARNING is displayed and ignorable.
+**Failure policy:** a pre-flight ERROR disables the Launch button. Overriding requires a typed confirmation and a reason. Both the override and the reason go to the audit log and to the host's trace file. A WARNING is displayed and ignorable. Post-flight results are always advisory — shown, never blocking, since the phase has already run.
 
 ---
 
@@ -340,7 +297,7 @@ Fields handled: `INCLOGDIR`, `NEW_GENERIC`, `NEW_LOAD`, `DEPOTFILE`, `PATCHDEPOT
 
 Append-only JSONL under `/opt/nfupgrader/var`, with a human-readable rendering available in the UI.
 
-Recorded: every login and token redemption, every step launch with its full argv, every go-token drop, every check result, every override with its reason, every abort, every config written, and every read-only peer ssh command with target host and exit status.
+Recorded: every login and token redemption, every phase launch with its full argv, every pre-flight and post-flight check result, every override with its reason, every state transition observed, every config written, and every read-only peer ssh command with target host and exit status.
 
 Entries are also appended to the local host's existing trace file, so the record appears in whatever log bundle support already collects.
 
@@ -353,22 +310,21 @@ This is the requirement Dan stated as the condition for accepting the auth and t
 | Condition | Behaviour |
 |---|---|
 | Peer unreachable over ssh | Shown as unknown in the site view. Never inferred. Never affects the local upgrade. |
-| Local gated process dead | Offered as a resume — relaunched detached from the local state file. |
+| Upgrade process died mid-run | Detected by pid gone + state file short of terminal. Offered as a resume — relaunched detached; `nf_upgrader` resumes from the state file, its own rerun path. |
 | GR transfer or restore in progress | Its own status: "blocked on GR transfer, 47 minutes elapsed", never a hang. `check_gr_inprogress` blocks inside the script for up to 4 hours. |
-| Check fails with ERROR | Next disabled; override available with a typed reason. |
-| Service crash or restart | Full reconciliation of local progress from the local state file, gated marker and pid liveness. |
+| Pre-flight check fails with ERROR | Launch disabled; override available with a typed reason. |
+| Service crash or restart | Progress record re-derived from the local state file, trace tail and pid liveness. The upgrade itself keeps running regardless — the service only observes it. |
 
 ---
 
 ## Testing
 
-The fake `Host` is the whole strategy. Canned command output drives the state machine, the checks engine and the dashboard with no boxes involved — including canned peer output for the read-only site view.
+The fake `Host` is the whole strategy. Canned command output drives the progress record, the checks engine and the dashboard with no boxes involved — including canned peer output for the read-only site view. A stub `nf_upgrader` that just advances the state file drives the progress-record logic without a real upgrade.
 
 - Fixture `cnc.cnfg` files for singlebox, multibox and GR layouts.
-- The shell gate is tested standalone against a stub `nf_upgrader` before it goes near the real one.
 - A real-box walk-through on a lab host closes each phase.
 
-**Fork equivalence is its own test target.** The whole point of forking is that `nf_upgrader` can replace `inc_upgrader`. So the fork is verified to match: run both (original, and fork *without* `-S`) against the same fixture inputs and diff the resulting state/control-file transitions and exit codes. They must be identical. The trace file will differ (that is the log-format change) and is excluded from that diff — but the log format is checked separately by asserting every non-excluded line matches the `TIMESTAMP SEVERITY …` grammar.
+**Fork equivalence is its own test target.** The whole point of forking is that `nf_upgrader` can replace `inc_upgrader`. Because the fork's *only* functional change is the log format, equivalence is clean to assert: run both against the same fixture inputs and diff the resulting state/control-file transitions and exit codes — they must be identical. The trace file is expected to differ (that is the log-format change) and is excluded from that diff; the log format is checked separately by asserting every non-excluded line matches the `TIMESTAMP SEVERITY …` grammar.
 
 ---
 
@@ -378,14 +334,13 @@ Each phase gets its own spec and plan. The narrowing to local-host-only collapse
 
 | Phase | Content |
 |---|---|
-| 1 | Fork `nf_upgrade` / `nf_upgrader`; add the `-S` gate + `swsstart` split; prove equivalence to the originals without `-S`. Driven by a CLI, local host. Nothing else is testable until stepping works. |
-| 2 | Logging cleanup in the forks: `log*` helpers, `run_logged`, emit-site conversion, grammar assertion. |
-| 3 | `host.py` / `site.py` / `progress.py` + web UI, local host, live output + severity-filtering log viewer, audit log. |
-| 4 | Checks engine. |
-| 5 | Dashboard: local tiers 1 and 2, plus read-only peer status over ssh, GR and multibox views. |
-| 6 | Config builder. |
+| 1 | Fork `nf_upgrade` / `nf_upgrader` = originals + logging cleanup (`log*` helpers, `run_logged`, emit-site conversion). Prove action/exit-code equivalence to the originals; assert the log grammar. This is the only phase that touches the shell. |
+| 2 | `host.py` / `site.py` / `steps.py` / `progress.py` + web UI: launch a phase, live output + severity-filtering log viewer, and the **progress record** (N states / completed / current). Audit log. |
+| 3 | Checks engine: pre-flight (blocking + override) and post-flight (advisory). |
+| 4 | Dashboard: local tiers 1 and 2, plus read-only peer status over ssh, GR and multibox views. |
+| 5 | Config builder. |
 
-Phases 1 and 2 both touch the forks and could merge, but keeping the gate (behavioral) separate from the logging pass (formatting) keeps the equivalence test in phase 1 clean — it runs before the trace format changes underneath it.
+Dropping the gate collapsed the former phases 1 and 2 into one: the fork's sole change is now the logging cleanup, so there is nothing behavioral to test separately from it.
 
 ---
 
