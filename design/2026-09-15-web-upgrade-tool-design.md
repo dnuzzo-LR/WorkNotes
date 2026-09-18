@@ -9,6 +9,8 @@
 
 **Revision 2026-09-16 (b):** Two additions. (1) The scripts are **forked, not modified** — new `nf_upgrade` / `nf_upgrader` are created drop-in behavior-compatible with the originals, which are left untouched, so they can eventually replace them once proven. The `-S` gate, the `swsstart` split and the logging cleanup all land in the forks only. (2) A **logging cleanup** gives every emitted line a severity prefix (`INFO` / `WARN` / `ERROR` / `FATAL`) and tags sub-command output as `EXEC`, and the web UI gains a severity-filterable log viewer over the trace file.
 
+**Revision 2026-09-18:** Everything, including the forked scripts, lives in **one standalone repo `~/Git/nfupgrader`** — not split across netflex and a new repo. The forks `nf_upgrade` / `nf_upgrader` and the logging include `nf_log.ksh` live at that repo's root; pinned snapshots of the netflex originals live under `ref/` purely as the equivalence-test baseline. This supersedes the earlier "forks live in netflex `3b2/shell/`" note below. **Phase 1 is implemented** in that repo (logging helpers + `run_logged` with unit tests, both forks converted, and the syntax/skeleton/coverage/grammar verifier all green); only the manual lab-host acceptance run remains.
+
 **Revision 2026-09-16 (c):** Per-state **stepping is dropped**. The upgrade runs straight through, as the original scripts do; the customer launches a phase and watches it. The UI keeps an **on-screen progress record**: how many states the phase has, how many have completed, and the current state — read from the existing state file, no pausing. This removes the `-S` gate, the `GO`/`GATED`/`ABORT` control files, and the `swsstart` split (its only purpose was to gate the CORE install). The **forks' sole functional change is now the logging cleanup.** Because nothing stops mid-run, checks reshape from per-state gates into **pre-flight** checks (block the Launch button, override allowed) and **post-flight** checks (advisory). Sections below reflect all of this.
 
 ---
@@ -389,6 +391,6 @@ None. The host-ordering question is moot under local-host-only scope — the cus
 
 ## References
 
-- `3b2/shell/inc_upgrade`, `3b2/shell/inc_upgrader`, `3b2/shell/linux_packages`, `3b2/shell/post-install.sh` — netflex repo, commit `776f42242`. The originals; `nf_upgrade` / `nf_upgrader` will be forked from these two and live alongside them in `3b2/shell/`.
+- `3b2/shell/inc_upgrade`, `3b2/shell/inc_upgrader`, `3b2/shell/linux_packages`, `3b2/shell/post-install.sh` — netflex repo, commit `776f42242`. The originals. `nf_upgrade` / `nf_upgrader` are forked from the first two and live in the standalone `~/Git/nfupgrader` repo (with pinned copies of the originals under `ref/` for equivalence testing).
 - `~/Git/nf-install` — `modules/system_checks.py`, `modules/multibox_config.py`, `modules/upgrade_manager.py`, `system-checks.json`, `reports.json`, `UPGRADE_INTEGRATION_README.md`
 - `gui/web-terminal` — existing standalone web service in the netflex repo (Rust/axum). Its `PreAuthenticated` session model (`src/session.rs:33`) depends on the netFLEX web GUI and does not carry over.
