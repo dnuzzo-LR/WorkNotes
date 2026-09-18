@@ -379,7 +379,8 @@ Each phase gets its own spec and plan. The narrowing to local-host-only collapse
 
 Dropping the gate collapsed the former phases 1 and 2 into one: the fork's sole change is now the logging cleanup, so there is nothing behavioral to test separately from it.
 
-**Phase 1 plan:** `~/WorkNotes/plans/2026-09-17-nfupgrader-phase1-fork-logging-plan.md`.
+**Phase 1 plan:** `~/WorkNotes/plans/2026-09-17-nfupgrader-phase1-fork-logging-plan.md` (implemented).
+**Phase 2 plan:** `~/WorkNotes/plans/2026-09-18-nfupgrader-phase2-service-plan.md` (local service, progress record, severity log viewer, token/loopback auth, audit log).
 
 ---
 
