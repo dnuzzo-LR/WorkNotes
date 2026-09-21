@@ -382,6 +382,7 @@ Dropping the gate collapsed the former phases 1 and 2 into one: the fork's sole 
 **Phase 1 plan:** `~/WorkNotes/plans/2026-09-17-nfupgrader-phase1-fork-logging-plan.md` (implemented).
 **Phase 2 plan:** `~/WorkNotes/plans/2026-09-18-nfupgrader-phase2-service-plan.md` (implemented; observe path lab-verified on r9dev19).
 **Phase 4a plan:** `~/WorkNotes/plans/2026-09-18-nfupgrader-phase4a-local-info-plan.md` (implemented; "About this host" local info + `/api/info`, smoke-verified on r9bld01). **Phase 4b plan:** `~/WorkNotes/plans/2026-09-21-nfupgrader-phase4b-peer-siteview-plan.md` (implemented; peer status over ssh + `/api/site` + Site table, smoke-verified on r9bld01).
+**Phase 3 plan:** `~/WorkNotes/plans/2026-09-21-nfupgrader-phase3-checks-plan.md` (implemented; pre-flight gating + logged override + post-flight advisory, gate smoke-verified on r9bld01).
 
 ---
 
