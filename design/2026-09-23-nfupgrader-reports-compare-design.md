@@ -79,11 +79,14 @@ $INCLOGDIR/nfupgrader_reports/<YYYYmmdd_HHMMSS>_<label>/
   `"snapshot": "<before id>"`. Launch spawn errors inside the callback are audited as
   `launch_error` (response has already been sent).
 - `stage` launches keep today's direct path.
-- **After-watcher** thread: every 30 s reads progress (`progress.read_progress` +
-  `launcher.upgrader_running`). A short grace (first 2 minutes) tolerates `not_started`/`died`
-  while nf_upgrader spins up. When status becomes `done` → start an *after* snapshot with
-  `pair_of = before id`. When `died` (after the grace) → same, with
-  `note: "upgrade died before completion"`. If a manual job is running at that moment, wait for it.
+- **After-watcher** thread: every 30 s reads the upgrade status (`progress.read_progress(host,
+  "upgrade", ...)` + `launcher.upgrader_running`). It only trusts `done`/`died` **after it has seen
+  `running` at least once** (the state file may still hold a terminal state from an earlier run).
+  - seen running, then `done` → *after* snapshot with `pair_of = before id`;
+  - seen running, then `died` → same, `note: "upgrade died before completion"`;
+  - never seen running within a 5-minute grace → same, `note: "upgrade not observed running (status: X)"`.
+  If a manual job is running at that moment, retry every 30 s until it can start.
+- The runner clears its busy flag *before* invoking `then`, so the watcher can start the after job.
 - Audit: `report_snapshot` records `{id, label, client|"auto"}` at start.
 
 ## 5. API (all require a session)
