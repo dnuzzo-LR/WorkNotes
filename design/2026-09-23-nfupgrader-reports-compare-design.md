@@ -59,6 +59,10 @@ $INCLOGDIR/nfupgrader_reports/<YYYYmmdd_HHMMSS>_<label>/
 - `pair_of`: on an *after* snapshot, the id of its *before*.
 - Pruning: after a snapshot completes, delete the oldest snapshot dirs beyond 20
   (never the running one).
+  - A *before* and the *after*(s) whose `pair_of` names it form one unit: pruned together
+    (each dir counts toward the excess) and kept whole if any member is protected.
+  - Protected: the live job's id and its `pair_of`, plus the newest *before* while it has no
+    *after* yet (an upgrade from it may be in flight).
 
 ## 3. Job runner
 
@@ -86,7 +90,20 @@ $INCLOGDIR/nfupgrader_reports/<YYYYmmdd_HHMMSS>_<label>/
   - seen running, then `died` → same, `note: "upgrade died before completion"`;
   - never seen running within a 5-minute grace → same, `note: "upgrade not observed running (status: X)"`.
   If a manual job is running at that moment, retry every 30 s until it can start.
-- The runner clears its busy flag *before* invoking `then`, so the watcher can start the after job.
+- The runner stays busy *through* `then` (which launches nf_upgrade), so `/api/launch` and
+  manual runs can't race the launch; busy clears only once `then` returns. `then` must not call
+  `start()` itself: the after snapshot is started later by a separate watcher thread that `then`
+  spawns, retrying on busy.
+- While nf_upgrader is running, `POST /api/reports/run` → 409 `{"error": "upgrade in progress"}`
+  and `POST /api/launch` → 409 `{"error": "upgrade already running"}` (checked right after the
+  snapshot-busy check). The watcher's own after snapshot calls the runner directly, unaffected.
+  The UI treats only a 409 carrying `not_overridden` as a pre-flight block; other 409s just show
+  "Not launched: <error>".
+- Interrupted before: if the service dies mid-*before*, `then` never runs and nothing is launched.
+  `GET /api/reports/job` returns `"notice": "Before snapshot <id> was interrupted — the upgrade
+  was not launched."` when no job runs, the newest snapshot is an `incomplete` *before* with no
+  *after* naming it, and nf_upgrader is not running (else `null`); the UI shows it in
+  `#launch-msg` and `#reports-job`.
 - Audit: `report_snapshot` records `{id, label, client|"auto"}` at start.
 
 ## 5. API (all require a session)
@@ -94,8 +111,8 @@ $INCLOGDIR/nfupgrader_reports/<YYYYmmdd_HHMMSS>_<label>/
 | Method/Path | Result |
 |---|---|
 | `GET /api/reports` | `{"snapshots": [manifest summaries, newest first]}` (summary = manifest minus per-report command) |
-| `POST /api/reports/run` | 202 `{"id"}`; 409 if a job runs; label `manual` |
-| `GET /api/reports/job` | `{"job": {...}|null}` |
+| `POST /api/reports/run` | 202 `{"id"}`; 409 if a job runs or nf_upgrader is running; label `manual` |
+| `GET /api/reports/job` | `{"job": {...}|null, "launch_error": str|null, "notice": str|null}` |
 | `GET /api/reports/compare?a=&b=` | `{"a", "b", "reports": [{name, status, added, removed}]}` |
 | `GET /api/reports/diff?a=&b=&report=&style=side\|unified` | `{"rows": [...], "truncated": bool}` |
 | `GET /api/reports/raw?id=&report=` | `text/plain` report file |
@@ -116,8 +133,9 @@ $INCLOGDIR/nfupgrader_reports/<YYYYmmdd_HHMMSS>_<label>/
 - Tab button + panel `tab-reports`.
 - Top: `#btn-reports-run` ("Run reports now"), `#reports-job` progress line, `#reports-list`
   table (label, started, status, note).
-- Compare: `#cmp-a`, `#cmp-b` selects (default: latest `after` and its `pair_of`; else the two
-  newest), `#cmp-style` (side/unified), `#cmp-table` rows with badge + counts; clicking a row
+- Compare: `#cmp-a`, `#cmp-b` selects (default: the newest `before` and the `after` whose `pair_of`
+  names it; else that `before` and the newest snapshot since it; else the two newest — only ids
+  present in the list), `#cmp-style` (side/unified), `#cmp-table` rows with badge + counts; clicking a row
   loads its diff into an expandable row, with links to raw A/B.
 - Upgrade tab: `#launch-msg` shows "Taking before snapshot N/21 — <report>…" while the before job
   runs (poll `/api/reports/job` every 3 s while a job is active).
