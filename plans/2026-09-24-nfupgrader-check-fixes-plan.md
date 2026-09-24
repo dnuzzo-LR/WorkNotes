@@ -419,7 +419,7 @@ class TestCheckFix(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIsNone(d["fix"])
         self.assertNotIn(["dnf", "install", "-y", "ksh"], self.ctx.host.calls)
-        self.assertEqual(self.events(), [e for e in self.events() if e["event"] != "check_fix_start"])
+        self.assertNotIn("check_fix_start", [e["event"] for e in self.events()])
 
     def test_refusals(self):
         self.assertEqual(self.fix({"name": "nope"})[0], 404)
@@ -592,4 +592,5 @@ document.getElementById("preflight").onclick = function (ev) {
 
 ### Task 4: Live check (loopback, no real system change)
 
-- [ ] Run the server with `NFU_UPGRADE_PATH=/bin/true` and a scratch `NFU_CHECKS` holding one `touchfile` check for a flag that doesn't exist, and a scratch `PATH` whose `scmd`… — simpler: verify via the API only that a failing `rpm_installed` check for a nonexistent package reports `fix: "dnf install -y <pkg>"`, and **do not** POST the fix on the dev box (it would really run dnf as the service user). The fix path itself is covered by unit tests.
+- [ ] Run the server on loopback (`NFU_UPGRADE_PATH=/bin/true`, scratch `INCLOGDIR`) with a scratch `NFU_CHECKS` holding one `rpm_installed` check for a package that doesn't exist. Via the API confirm the failing check reports `fix: "dnf install -y <pkg>"`, and that `POST /api/checks/fix` for an unknown name returns 404.
+- [ ] **Do not** POST a real fix on the dev box (it would really run dnf/sysctl). The apply paths are covered by the unit tests; the first real fix is exercised on holmvm32.
