@@ -46,3 +46,8 @@ Optional, separate decision: have the migrator and `lic_create` fill `NeGroup` w
 ## Not this bug (possible separate tickets)
 - `JSON Counts` parse error: `invalid literal; last read: '/'`
 - `WEIGHTED NE` Avail `-13872.25` against a license of `0.00`
+
+## Status (2026-10-02)
+- Fix applied on `issue-7928-inc-size-failing`: `<=` → `<` in `get_group_dtypes()` in both `inc_size.c` and `licbox.c`, with Doxygen headers. Not committed yet.
+- Builds cleanly locally with `nmake -f tools.mk` for `3b2/bin/inc_size` and `3b2/bin/license`.
+- Dan tested the patched `inc_size -g`: it works. The licbox fix (`license` binary) is not separately tested; it is assumed fine because the change is identical.
