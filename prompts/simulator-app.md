@@ -11,6 +11,11 @@ It replaces today's fragmented simulators. The baseline is **feature parity** wi
 "Parity baseline"), with **Lua scripting** added wherever it makes responses dynamic,
 stateful, or event-driven.
 
+A primary user is an **LLM coding agent**, such as Claude Code. The agent uses the simulator
+to write tests for netFLEX NE drivers, and to verify that a code change behaves correctly
+and causes no regressions. Every feature must work without a human using the GUI (see
+"LLM and automated testing").
+
 ## Problems with today's simulators (why)
 
 - Each protocol has its own simulator, config file, and control mechanism:
@@ -217,12 +222,73 @@ simulator, per command/URI/OID, or globally:
 - Skip the empty leftover directories (`00`–`59` etc.) that `findRfile` creates.
 - Never modify the source `lansim` directories.
 
+## LLM and automated testing (new)
+
+The agent must be able to set up NE behaviour, run netFLEX against it, and check what
+netFLEX did, entirely through tools.
+
+- **MCP server.** The server exposes its API as MCP tools, so an LLM agent can drive it
+  directly. Tools include:
+  - list, create, start, stop, and delete simulators
+  - read and write response files and Lua
+  - inject events (alarms, traps, notifications)
+  - query the request journal
+  - snapshot and reset state
+  - explain how a request was matched
+- **Ephemeral test simulators.**
+  - Create a simulator in one call from a template, from an existing simulator (cloned
+    copy-on-write), or from inline response definitions.
+  - Scope test simulators to a test session. Each has a TTL and is cleaned up automatically
+    when the session ends or the TTL expires. Test sims never pollute workspaces.
+  - Use a separate IP pool for test simulators, so tests can run in parallel.
+- **Request journal.**
+  - Record every request and response per simulator, with timestamps: TL1 command, CLI
+    line, SNMP PDU, NETCONF RPC, RESTCONF method/URI/body.
+  - Queryable and filterable through the API and MCP, so a test can assert e.g. "netFLEX
+    sent `ED-OCH` to AID X with parameter Y" or "no SET was issued".
+- **Unmatched requests.** Report every request that matched no response file, with
+  the paths that were searched. This tells the agent which simulator data is missing.
+- **Match explain / dry run.** Given a request, return which file or Lua handler would
+  answer it, the search order that was tried, and the rendered response. Do this without a
+  client connection.
+- **Expectations.** Optionally declare expected requests (with order, count, and parameter
+  matchers) and later verify them. The result is structured pass/fail with a diff.
+- **Deterministic mode.** For repeatable tests:
+  - a fixed or controllable clock (`$date`, `$time`, sysUpTime)
+  - seeded `$range` values
+  - deterministic sequence numbers and delays
+- **State snapshot/restore.** Save and restore a simulator's full state (Lua store, SNMP
+  DB, overlays) by name, so tests start from a known baseline.
+- **Golden-journal regression.** Record a journal from a known-good netFLEX build and save
+  it as a golden file. Later runs are diffed against it, normalising ctags, timestamps,
+  and sequence numbers, so a code change shows up as a precise list of changed requests.
+- **Declarative scenarios.** A YAML scenario file contains:
+  - the simulators to stand up (inline or by reference)
+  - initial state
+  - events to inject, with timing
+  - expectations and golden-journal comparisons
+
+  `nesimctl test run <scenario>` runs it and produces JUnit XML plus JSON results for CI.
+  Scenarios are plain text so an LLM can write and review them.
+- **Machine-readable documentation.**
+  - The OpenAPI spec.
+  - A JSON Schema for the manifest and scenario formats.
+  - A reference for each response-file grammar and the Lua API.
+  - Ship an `llms.txt` / agent skill describing how to use the simulator for testing.
+- **Actionable errors.** Every error says what was expected and how to fix it, such as a
+  malformed response file with its line number, a Lua error with a stack trace, or an IP
+  conflict naming the owner.
+- **Validation.** Provide lint/validate endpoints for response files, manifests, Lua
+  scripts, and scenarios, so an agent can check its work before starting a simulator.
+
 ## API
 
 - REST/JSON with an OpenAPI spec. Everything the GUI can do is available through the API.
 - Covers the inventory, lifecycle, files, events/injection, import, status, and IP
   allocation.
-- A small CLI client (`nesimctl`) on top of the API, for scripts and automation.
+- A small CLI client (`nesimctl`) on top of the API, for scripts, CI, and test runs.
+  Machine-readable (`--json`) output on every command.
+- An MCP server exposing the same operations (see "LLM and automated testing").
 
 ## Web GUI
 
@@ -257,3 +323,8 @@ simulator, per command/URI/OID, or globally:
 2. Can two netFLEX hosts attach to the same running simulator? If so, do they share Lua
    state?
 3. Which subnet will be delegated, and who owns the router change?
+4. Should scenarios also **drive netFLEX**? Scenarios could run netFLEX commands on an
+   attached host (e.g. trigger a provision or audit), or the agent could drive netFLEX
+   itself and use the simulator only for setup and assertions.
+5. Which netFLEX test framework should consume the results, if any? Or is JUnit XML plus
+   JSON enough?
