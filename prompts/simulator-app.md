@@ -72,7 +72,8 @@ Each simulator directory has a manifest (`nesim.yaml`) with:
 - id, name, description, owner, workspace, tags
 - NE vendor/type (netFLEX dtype), software release, TID(s)
 - IP address
-- enabled protocols, each with its port (default: standard) and credentials
+- enabled protocols, each with its port (default: standard) and credentials (incl. SNMP
+  communities, SNMPv3 engine ID and USM users)
 - behaviour options: per-command delays, ACK default, mode flags, autonomous message config
 - Lua script entry points, if any
 - provenance: imported from (`lansimNNNNNN` path), copied from
@@ -150,9 +151,14 @@ Each simulator directory has a manifest (`nesim.yaml`) with:
 - The `simulator` community can create and delete variables. RowStatus destroy deletes the
   row.
 - Dynamic OIDs: counters that increment on each read, date/time values, and sysUpTime.
-- v1/v2c is required. v3 is optional; see open questions.
-- Traps: send from the simulator's own IP, triggered from the API/GUI, Lua, or a schedule.
-  This replaces `trapgen` / `trapsend_proxy`.
+- **v1, v2c and v3 are all required.** For v3:
+  - Each simulator has its own snmpEngineID, configurable in the manifest.
+  - USM users are set per simulator in the manifest. Auth: none/MD5/SHA/SHA-2. Privacy:
+    none/DES/AES.
+  - The v3 context (contextName / contextEngineID) selects the per-card `ctxid` data, in
+    place of the community string used with v1/v2c.
+- Traps and informs (v1/v2c/v3): send from the simulator's own IP, triggered from the
+  API/GUI, Lua, or a schedule. This replaces `trapgen` / `trapsend_proxy`.
 
 ### NETCONF (today: client-side `netconfRsp.map` in `netclan`)
 
@@ -246,9 +252,8 @@ simulator, per command/URI/OID, or globally:
 
 ## Open questions
 
-1. Is **SNMPv3** needed?
-2. Should the client-side fake paths in `netclan`/`restclan`/`xlansimd` (`localhost`/`xlansim`
+1. Should the client-side fake paths in `netclan`/`restclan`/`xlansimd` (`localhost`/`xlansim`
    checks) be retired once the new simulator exists?
-3. Can two netFLEX hosts attach to the same running simulator? If so, do they share Lua
+2. Can two netFLEX hosts attach to the same running simulator? If so, do they share Lua
    state?
-4. Which subnet will be delegated, and who owns the router change?
+3. Which subnet will be delegated, and who owns the router change?
