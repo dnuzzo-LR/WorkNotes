@@ -42,8 +42,10 @@ stateful, or event-driven.
     (`ip route add local <subnet> dev lo`), so it does not manage an alias per simulator.
   - The server needs `CAP_NET_BIND_SERVICE`. Do not run it as root.
 - **IP lifecycle.**
-  - Allocate the IP when the simulator is **created**, not when it starts. It stays the same
-    across stop/start and server restarts.
+  - A simulator created in the app gets its IP when it is **created**.
+  - An **imported** simulator has no IP after import. It gets one the **first time it is
+    started**.
+  - Once assigned, the IP stays the same across stop/start and server restarts.
   - Store the IP in the simulator manifest and track it in the inventory.
   - On create, the user may pick a specific free IP. Otherwise the next free one is used.
   - Copying a simulator always allocates a **new** IP.
@@ -204,7 +206,9 @@ simulator, per command/URI/OID, or globally:
 - Import existing `/simdata/<host>/lansimNNNNNN` directories (TL1, CLI, NETCONF, RESTCONF
   data), `.clansim` scripts, and SNMP `.mdb` files into the new format, generating a
   manifest.
-- Gather metadata from netFLEX where available: NE id, dtype, TID, and current IP.
+- Import does **not** allocate an IP. The simulator stays unaddressed until its first start
+  (see "IP lifecycle").
+- Gather metadata from netFLEX where available: NE id, dtype, and TID.
 - Import single simulators or a whole workspace, with a dry-run report.
 - Skip the empty leftover directories (`00`–`59` etc.) that `findRfile` creates.
 - Never modify the source `lansim` directories.
@@ -242,13 +246,10 @@ simulator, per command/URI/OID, or globally:
 
 ## Open questions
 
-1. **Import IPs:** when importing an existing simulator, should it keep the IP its netFLEX NE
-   record uses today (when that IP fits the range), or always get a new one and have the NE
-   repointed?
-2. Should **capture proxy mode** be in the initial scope or future work?
-3. Is **SNMPv3** needed?
-4. Should the client-side fake paths in `netclan`/`restclan`/`xlansimd` (`localhost`/`xlansim`
+1. Should **capture proxy mode** be in the initial scope or future work?
+2. Is **SNMPv3** needed?
+3. Should the client-side fake paths in `netclan`/`restclan`/`xlansimd` (`localhost`/`xlansim`
    checks) be retired once the new simulator exists?
-5. Can two netFLEX hosts attach to the same running simulator? If so, do they share Lua
+4. Can two netFLEX hosts attach to the same running simulator? If so, do they share Lua
    state?
-6. Which subnet will be delegated, and who owns the router change?
+5. Which subnet will be delegated, and who owns the router change?
