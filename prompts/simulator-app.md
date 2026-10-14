@@ -64,6 +64,17 @@ and causes no regressions. Every feature must work without a human using the GUI
   - browse every workspace
   - filter by workspace
   - copy one or more simulators between workspaces
+- **One host per running simulator.** A running simulator is attached to exactly **one**
+  netFLEX host. It is never shared.
+  - The attached host is fixed at start. It defaults to the workspace's host (e.g.
+    `linc05`) and can be overridden on start.
+  - The host is identified by its source IP(s). A host with several addresses can list all
+    of them.
+  - The simulator refuses connections (TL1/CLI/NETCONF/RESTCONF) and drops packets (SNMP)
+    from any other source. Each rejection is logged and shown in status and the journal,
+    naming the host that holds the simulator.
+  - Moving a simulator to a different host means stopping it and restarting it attached to
+    the other host. Its state, and therefore Lua state, belongs to that single attachment.
 - **Scale:** target hundreds of simulators running at once on one server.
 - **Platform:** a single static binary with no CGO if possible, running on RHEL 8/9.
 
@@ -320,11 +331,9 @@ netFLEX did, entirely through tools.
 
 1. Should the client-side fake paths in `netclan`/`restclan`/`xlansimd` (`localhost`/`xlansim`
    checks) be retired once the new simulator exists?
-2. Can two netFLEX hosts attach to the same running simulator? If so, do they share Lua
-   state?
-3. Which subnet will be delegated, and who owns the router change?
-4. Should scenarios also **drive netFLEX**? Scenarios could run netFLEX commands on an
+2. Which subnet will be delegated, and who owns the router change?
+3. Should scenarios also **drive netFLEX**? Scenarios could run netFLEX commands on an
    attached host (e.g. trigger a provision or audit), or the agent could drive netFLEX
    itself and use the simulator only for setup and assertions.
-5. Which netFLEX test framework should consume the results, if any? Or is JUnit XML plus
+4. Which netFLEX test framework should consume the results, if any? Or is JUnit XML plus
    JSON enough?
