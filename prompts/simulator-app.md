@@ -337,3 +337,24 @@ netFLEX did, entirely through tools.
    itself and use the simulator only for setup and assertions.
 4. Which netFLEX test framework should consume the results, if any? Or is JUnit XML plus
    JSON enough?
+
+## Assumptions to confirm
+
+- An imported simulator **keeps** the IP it gets on first start for all later starts. The
+  alternative is a fresh IP on every start.
+- The single-host rule is enforced by **source IP**, and the attached host defaults to the
+  workspace's host.
+
+## Status (2026-10-14)
+
+Prompt refinement paused. Before turning this into a spec, resolve the open questions above
+and confirm the assumptions.
+
+Decided so far:
+- One central server; IP per simulator via an AnyIP routed subnet.
+- Existing simulators are imported/migrated, not read in place.
+- Feature parity with today's simulators, plus Lua.
+- SNMPv3 is required.
+- Recording real NEs is a non-goal.
+- An LLM agent is a primary user.
+- No sharing of a running simulator between hosts.
