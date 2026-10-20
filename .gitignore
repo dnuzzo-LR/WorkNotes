@@ -1,0 +1,5 @@
+
+# Version Claude skills (global gitignore excludes .claude)
+!.claude/
+.claude/*
+!.claude/skills/
