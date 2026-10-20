@@ -99,15 +99,12 @@ and lterm is retired there once mqorderd is live.
 - **No redundancy at the customer (user's decision).** There's no
   active/standby, so no role check is needed and a boot_nms trigger is
   enough. Document this assumption in the unit file and the example YAML.
-- **Build passes (my call, following `cnc/wvlsvc/route_oms/route_oms.mk`):**
-  build in both the 32-bit and 64-bit passes, switching on `$(L64_SETUP)`:
-  - `L64_SETUP=1` → `GOARCH=amd64` against `$(MQ_ROOT)/lib64`
-  - otherwise → `GOARCH=386` against `$(MQ_ROOT)/lib` (needs `-m32` in
-    `CGO_CFLAGS`/`CGO_LDFLAGS`)
-
-  Whichever pass ships to `/usr/cnc/bin`, the binary matches the MQ libs
-  for that architecture. If mq-golang won't build for 386, stop and
-  report; don't quietly ship 64-bit only.
+- **64-bit only (user's decision, 2026-10-20).** Tested: mq-golang v5.7.3
+  builds and links against `/opt/devtools/mqm/v9.1.0-7` (`inc` + `lib64`),
+  but it doesn't support linux/386: it ships no 386 constants file, and
+  `mqi.go:1412` uses a `1<<31` array length. Build only when
+  `$(L64_SETUP)` == "1". In the 32-bit pass the makefile does nothing. Link
+  with `-Wl,-rpath,/opt/mqm/lib64`.
 
 ## Existing behavior that must be matched (lterm)
 
@@ -335,9 +332,8 @@ Environment=LD_LIBRARY_PATH=/opt/mqm/lib64:/usr/cnc/lib
 # Do NOT add NoNewPrivileges= or other hardening: orderprint is setuid root.
 # No active/standby support: assumes a single (non-redundant) INC host.
 ```
-- `LD_LIBRARY_PATH` must match the shipped binary's architecture:
-  `/opt/mqm/lib` for the 32-bit build, `/opt/mqm/lib64` for 64-bit. Prefer
-  an rpath baked in at link time, which makes this line unnecessary.
+- The binary carries an rpath to `/opt/mqm/lib64`. The `LD_LIBRARY_PATH`
+  line is only a backup.
 - **No `[Install]` section, and it is never `systemctl enable`d.** Enabling
   it would start it at OS boot, before the INC application is up.
 - `TimeoutStopSec` must be longer than a worst-case orderprint run.
@@ -406,7 +402,6 @@ Environment=LD_LIBRARY_PATH=/opt/mqm/lib64:/usr/cnc/lib
 ## Left to the builder
 - Go package layout inside `cnc/mqorder/`, and the internal interfaces
   (keep MQ behind an interface so the loop is testable).
-- The exact mq-golang version (must build against MQ 9.1.0.7 headers).
 - Exact wait interval, retry/backoff constants, and the log throttle
   interval, within the bounds above.
 - Exact boot_nms call sites (start after app up, stop before app down, in
@@ -426,11 +421,7 @@ Environment=LD_LIBRARY_PATH=/opt/mqm/lib64:/usr/cnc/lib
 2. **Failed pages need manual recovery, as with lterm today.** An order with
    a failed page won't complete in orderprint until someone re-feeds the
    kept page. Make the `failed_dir` trace line clear enough to act on.
-3. **mq-golang on 386.** mq-golang is mainly tested on 64-bit. If it won't
-   build for `GOARCH=386`, decide whether the shipping build pass can be
-   64-bit only before going further.
-4. **Build hosts need Go 1.24** plus the MQ 9.1 headers and libs for both
-   architectures. Confirm on every RHEL build host before wiring into the
+3. **Build hosts need Go 1.24** plus the MQ 9.1 headers and `lib64`. Confirm on every RHEL build host before wiring into the
    release build.
 
 ## Unrelated findings
