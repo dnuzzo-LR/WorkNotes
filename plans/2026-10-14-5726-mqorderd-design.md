@@ -421,7 +421,8 @@ Environment=LD_LIBRARY_PATH=/opt/mqm/lib64:/usr/cnc/lib
 2. **Failed pages need manual recovery, as with lterm today.** An order with
    a failed page won't complete in orderprint until someone re-feeds the
    kept page. Make the `failed_dir` trace line clear enough to act on.
-3. **Build hosts need Go 1.24** plus the MQ 9.1 headers and `lib64`. Confirm on every RHEL build host before wiring into the
+3. **Stale journal under mixed priorities.** If a different message is delivered before the crashed one is redelivered, the journal is cleared and the crashed message's pages could run again. Orders are expected at a single priority, where MQ redelivers the backed-out message first.
+4. **Build hosts need Go 1.24** plus the MQ 9.1 headers and `lib64`. Confirm on every RHEL build host before wiring into the
    release build.
 
 ## Unrelated findings
